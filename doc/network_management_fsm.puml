@@ -1,0 +1,195 @@
+@startuml
+!theme plain
+skinparam state {
+    BackgroundColor<<idle>> LightGray
+    BackgroundColor<<add>> LightBlue
+    BackgroundColor<<remove>> LightCoral
+    BackgroundColor<<learn>> LightGreen
+    BackgroundColor<<replace>> LightYellow
+    BackgroundColor<<smart_start>> LightCyan
+}
+
+title Network Management State Machine (NMS)\n30+ States for Node Inclusion, Exclusion, Learning
+
+[*] --> NM_IDLE : Initialize
+
+state NM_IDLE <<idle>> : **IDLE STATE**\nReady for commands\nNo operations in progress
+
+' === ADD NODE STATES ===
+state "Add Node Operations" as AddGroup {
+    state NM_WAIT_FOR_ADD <<add>> : Waiting for node to join\nTimeout: 60s
+    state NM_NODE_FOUND <<add>> : Node discovered\nProtocol assigned NodeID
+    state NM_WAIT_FOR_PROTOCOL <<add>> : Protocol completing\nadd operation
+    state NM_WAIT_FOR_SECURE_ADD <<add>> : **S2/S0 Inclusion**\nSecure bootstrapping\nTimeout: 240s (user input)
+    state NM_WAIT_FOR_PROBE_AFTER_ADD <<add>> : Node interview\nGathering capabilities
+    state NM_WAIT_DHCP <<add>> : IPv4 address\nassignment\nTimeout: 5s
+    state NM_PREPARE_SUC_INCLISION <<add>> : Preparing SUC\nhandover
+    state NM_WIAT_FOR_SUC_INCLUSION <<add>> : SUC completing\nsecure inclusion
+    state NM_WAIT_FOR_NEIGHBOR_UPDATE_AFTER_SECURE_ADD <<add>> : Neighbor update\nafter S2 inclusion
+
+    NM_WAIT_FOR_ADD --> NM_NODE_FOUND : Node found\n(NIF received)
+    NM_NODE_FOUND --> NM_WAIT_FOR_PROTOCOL : Classic inclusion
+    NM_NODE_FOUND --> NM_WAIT_FOR_SECURE_ADD : S2/S0 inclusion
+    NM_WAIT_FOR_PROTOCOL --> NM_PREPARE_SUC_INCLISION : If SUC present
+    NM_PREPARE_SUC_INCLISION --> NM_WIAT_FOR_SUC_INCLUSION : Handover
+    NM_WIAT_FOR_SUC_INCLUSION --> NM_WAIT_FOR_SECURE_ADD : Proxy complete
+    NM_WAIT_FOR_SECURE_ADD --> NM_WAIT_FOR_PROBE_AFTER_ADD : Security done
+    NM_WAIT_FOR_PROBE_AFTER_ADD --> NM_WAIT_DHCP : Probe complete
+    NM_WAIT_FOR_SECURE_ADD --> NM_WAIT_FOR_NEIGHBOR_UPDATE_AFTER_SECURE_ADD : Skip FLiRS\nneighbor update
+    NM_WAIT_FOR_NEIGHBOR_UPDATE_AFTER_SECURE_ADD --> NM_WAIT_FOR_PROBE_AFTER_ADD : Update done
+}
+
+' === SMART START STATES ===
+state "Smart Start Self-Destruct" as SmartStartGroup {
+    state NM_WAIT_FOR_SELF_DESTRUCT <<smart_start>> : **Smart Start Failed**\nWaiting to remove\nTimeout: 3s
+    state NM_WAIT_FOR_SELF_DESTRUCT_RETRY <<smart_start>> : Retry self-destruct\nTimeout: 240s
+    state NM_WAIT_FOR_TX_TO_SELF_DESTRUCT <<smart_start>> : Sending NOP\nto failing node
+    state NM_WAIT_FOR_TX_TO_SELF_DESTRUCT_RETRY <<smart_start>> : Retry NOP to\nfailing node
+    state NM_WAIT_FOR_SELF_DESTRUCT_REMOVAL <<smart_start>> : Removing failed\nSmart Start node
+    state NM_WAIT_FOR_SELF_DESTRUCT_REMOVAL_RETRY <<smart_start>> : Retry removal
+
+    NM_WAIT_FOR_SELF_DESTRUCT --> NM_WAIT_FOR_TX_TO_SELF_DESTRUCT : Timeout
+    NM_WAIT_FOR_TX_TO_SELF_DESTRUCT --> NM_WAIT_FOR_SELF_DESTRUCT_REMOVAL : NOP sent
+    NM_WAIT_FOR_SELF_DESTRUCT_REMOVAL --> NM_WAIT_FOR_SELF_DESTRUCT_RETRY : Failed
+    NM_WAIT_FOR_SELF_DESTRUCT_RETRY --> NM_WAIT_FOR_TX_TO_SELF_DESTRUCT_RETRY : Timeout
+    NM_WAIT_FOR_TX_TO_SELF_DESTRUCT_RETRY --> NM_WAIT_FOR_SELF_DESTRUCT_REMOVAL_RETRY : NOP sent
+    NM_WAIT_FOR_SELF_DESTRUCT_REMOVAL_RETRY --> NM_IDLE : Complete
+}
+
+' === REMOVE NODE STATES ===
+state "Remove Node Operations" as RemoveGroup {
+    state NM_WAITING_FOR_NODE_REMOVAL <<remove>> : Waiting for protocol\nto remove node
+    state NM_REMOVING_ASSOCIATIONS <<remove>> : Cleaning up\nIP associations
+    state NM_WAITING_FOR_FAIL_NODE_REMOVAL <<remove>> : Removing failed node
+
+    NM_WAITING_FOR_NODE_REMOVAL --> NM_REMOVING_ASSOCIATIONS : Remove done
+    NM_REMOVING_ASSOCIATIONS --> NM_IDLE : Associations cleaned
+    NM_WAITING_FOR_FAIL_NODE_REMOVAL --> NM_IDLE : Failed node removed
+}
+
+' === REPLACE FAILED NODE ===
+state NM_REPLACE_FAILED_REQ <<replace>> : Replace failed node\nTimeout: 60s
+NM_REPLACE_FAILED_REQ --> NM_WAIT_FOR_SECURE_ADD : If handling\ninclusion
+NM_REPLACE_FAILED_REQ --> NM_PREPARE_SUC_INCLISION : If SUC present
+
+' === LEARN MODE STATES ===
+state "Learn Mode Operations" as LearnGroup {
+    state NM_LEARN_MODE <<learn>> : **Learn Mode Started**\nWaiting for controller\nTimeout: 60s
+    state NM_LEARN_MODE_STARTED <<learn>> : Protocol committed\nWaiting for completion
+    state NM_WAIT_FOR_SECURE_LEARN <<learn>> : **S2/S0 Learn Mode**\nSecure bootstrapping\nTimeout: 240s
+    state NM_WAIT_FOR_MDNS <<learn>> : Waiting for\nmDNS shutdown
+    state NM_WAIT_FOR_PROBE_BY_SIS <<learn>> : SIS probing gateway\nRestart timer on frame
+    state NM_WAIT_FOR_OUR_PROBE <<learn>> : Gateway self-probe\nafter inclusion
+    state NM_SET_DEFAULT <<learn>> : Factory reset\nClearing network
+
+    NM_LEARN_MODE --> NM_LEARN_MODE_STARTED : Learn mode\nstarted callback
+    NM_LEARN_MODE_STARTED --> NM_WAIT_FOR_SECURE_LEARN : Learn mode\ndone (inclusion)
+    NM_LEARN_MODE_STARTED --> NM_SET_DEFAULT : Exclusion
+    NM_WAIT_FOR_SECURE_LEARN --> NM_WAIT_FOR_MDNS : Security done
+    NM_WAIT_FOR_MDNS --> NM_WAIT_FOR_PROBE_BY_SIS : If new learn mode
+    NM_WAIT_FOR_MDNS --> NM_WAITING_FOR_PROBE : Otherwise
+    NM_WAIT_FOR_PROBE_BY_SIS --> NM_WAIT_FOR_OUR_PROBE : Timeout (6s)
+    NM_WAIT_FOR_OUR_PROBE --> NM_WAITING_FOR_PROBE : Probe complete
+    NM_SET_DEFAULT --> NM_WAITING_FOR_PROBE : mDNS exited
+}
+
+' === PROXY INCLUSION ===
+state NM_PROXY_INCLUSION_WAIT_NIF <<add>> : **Proxy Inclusion**\nWaiting for NIF
+
+NM_PROXY_INCLUSION_WAIT_NIF --> NM_NODE_FOUND : NIF received
+
+' === OTHER STATES ===
+state NM_WAITING_FOR_PROBE <<idle>> : Waiting for network\nupdate flags
+state NM_SENDING_NODE_INFO <<idle>> : Sending node\ninformation
+state NM_WAITING_FOR_NODE_NEIGH_UPDATE <<idle>> : Neighbor update\nin progress
+state NM_WAITING_FOR_RETURN_ROUTE_ASSIGN <<idle>> : Assigning\nreturn route
+state NM_WAITING_FOR_RETURN_ROUTE_DELETE <<idle>> : Deleting\nreturn route
+state NM_WAIT_FOR_NODE_INFO_PROBE <<idle>> : Probing for\nNodeInfoCachedGet
+
+' === MAIN STATE TRANSITIONS ===
+
+NM_IDLE --> NM_WAIT_FOR_ADD : NODE_ADD
+NM_IDLE --> NM_WAITING_FOR_NODE_REMOVAL : NODE_REMOVE
+NM_IDLE --> NM_WAITING_FOR_FAIL_NODE_REMOVAL : REMOVE_FAILED_NODE
+NM_IDLE --> NM_REPLACE_FAILED_REQ : REPLACE_FAILED_NODE
+NM_IDLE --> NM_LEARN_MODE : LEARN_MODE_SET
+NM_IDLE --> NM_SET_DEFAULT : DEFAULT_SET
+NM_IDLE --> NM_SENDING_NODE_INFO : NODE_INFO_SEND
+NM_IDLE --> NM_WAITING_FOR_NODE_NEIGH_UPDATE : NEIGHBOR_UPDATE
+NM_IDLE --> NM_WAITING_FOR_RETURN_ROUTE_ASSIGN : RETURN_ROUTE_ASSIGN
+NM_IDLE --> NM_WAITING_FOR_RETURN_ROUTE_DELETE : RETURN_ROUTE_DELETE
+NM_IDLE --> NM_WAIT_FOR_NODE_INFO_PROBE : NODE_INFO_CACHED_GET
+NM_IDLE --> NM_PROXY_INCLUSION_WAIT_NIF : PROXY_INCLUSION
+
+' === RETURN TO IDLE ===
+NM_WAIT_DHCP --> NM_IDLE : DHCP done /\nTimeout
+NM_WAITING_FOR_PROBE --> NM_IDLE : Probe complete
+NM_SENDING_NODE_INFO --> NM_IDLE : Send complete
+NM_WAITING_FOR_NODE_NEIGH_UPDATE --> NM_IDLE : Update complete
+NM_WAITING_FOR_RETURN_ROUTE_ASSIGN --> NM_IDLE : Assign complete
+NM_WAITING_FOR_RETURN_ROUTE_DELETE --> NM_IDLE : Delete complete
+NM_WAIT_FOR_NODE_INFO_PROBE --> NM_IDLE : Probe complete
+
+' === ERROR PATHS ===
+NM_WAIT_FOR_ADD --> NM_IDLE : Timeout /\nAbort
+NM_WAIT_FOR_SECURE_ADD --> SmartStartGroup : Smart Start\nfailure
+NM_LEARN_MODE --> NM_IDLE : Timeout /\nAbort
+NM_REPLACE_FAILED_REQ --> NM_IDLE : Timeout /\nFailure
+
+note right of NM_IDLE
+  **State Flags** (substate):
+  - NMS_FLAG_S2_ADD
+  - NMS_FLAG_PROXY_INCLUSION
+  - NMS_FLAG_LEARNMODE_NEW
+  - NMS_FLAG_LEARNMODE_NWI
+  - NMS_FLAG_SMART_START_INCLUSION
+  - NMS_FLAG_REPORT_DSK
+end note
+
+note right of AddGroup
+  **Add Node Types**:
+  - Classic (non-secure)
+  - S0 Secure
+  - S2 Secure (3 classes)
+  - Smart Start
+  - Proxy Inclusion
+  - Replace Failed Node
+
+  **Timeouts**:
+  - Add mode: 60s
+  - S2 inclusion: 240s
+  - Probe: Variable
+  - DHCP: 5s
+end note
+
+note right of LearnGroup
+  **Learn Mode**:
+  - Inclusion: Join network
+  - Exclusion: Leave network
+  - Controller replication
+
+  **Security**:
+  - S0 or S2 bootstrapping
+  - Key exchange with including controller
+
+  **Reset**:
+  - mDNS shutdown
+  - Network database reset
+  - Gateway reconfiguration
+end note
+
+note right of SmartStartGroup
+  **Smart Start Self-Destruct**:
+  When S2 inclusion fails for
+  a Smart Start node, the gateway
+  must remove the failing node
+  to allow retry.
+
+  **Process**:
+  1. Wait 3s
+  2. Send NOP (verify failure)
+  3. Call ZW_RemoveFailedNode()
+  4. On failure, retry after 240s
+end note
+
+@enduml

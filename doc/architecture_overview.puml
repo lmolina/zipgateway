@@ -1,0 +1,117 @@
+@startuml
+!define COMPONENT_STYLE
+skinparam componentStyle rectangle
+skinparam component {
+    BackgroundColor<<tier1>> LightBlue
+    BackgroundColor<<tier2>> LightGreen
+    BackgroundColor<<tier3>> LightYellow
+    BackgroundColor<<external>> LightGray
+    BorderColor Black
+}
+
+title Z/IP Gateway Architecture Overview
+
+package "LAN Side (IP)" <<external>> {
+    [ZIP Clients\n(IPv4/IPv6)] as clients
+    [mDNS\nDiscovery] as mdns_client
+    [DTLS\nSecurity] as dtls_client
+}
+
+package "Tier 1: Gateway Core" <<tier1>> {
+    [ZIP_Router\n(Event Dispatcher)] as router <<core>>
+    [Network Management FSM\n(30+ states)] as nm_fsm <<core>>
+    [Resource Directory\n(Node Database)] as rd <<core>>
+    [Bridge\n(IP Emulation)] as bridge <<core>>
+    [Mailbox\n(Command Queue)] as mailbox <<core>>
+
+    router -down-> nm_fsm : "events"
+    router -down-> rd : "node queries"
+    router -down-> bridge : "virtual nodes"
+    router -down-> mailbox : "queue mgmt"
+}
+
+package "Tier 2: Security & Transport" <<tier2>> {
+    [S2 Protocol\n(Encryption)] as s2_proto <<security>>
+    [S2 Inclusion FSM\n(Key Exchange)] as s2_incl <<security>>
+    [Transport Service 2\n(Fragmentation)] as ts2 <<transport>>
+    [Security Layer\n(S0/S2 Router)] as sec_layer <<security>>
+    [Serial API\n(NCP Protocol)] as serial <<transport>>
+
+    s2_proto -right-> s2_incl : "inclusion\ncoordination"
+    sec_layer -down-> s2_proto : "S2 frames"
+    sec_layer -down-> ts2 : "large frames"
+    ts2 -down-> serial : "fragments"
+}
+
+package "Tier 3: Networking" <<tier3>> {
+    [mDNS Service\n(Discovery)] as mdns_svc <<network>>
+    [IPv4/IPv6\nSupport] as ip <<network>>
+    [Multicast\nGroups] as mcast <<network>>
+    [DHCP Server] as dhcp <<network>>
+
+    mdns_svc -right-> ip : "announces"
+    ip -right-> dhcp : "address\nassignment"
+}
+
+package "PAN Side (Z-Wave)" <<external>> {
+    [Z-Wave Controller\n(NCP)] as ncp
+    [Z-Wave Network] as zwave
+
+    ncp -right-> zwave : "RF"
+}
+
+' Vertical flow
+clients -down-> router : "ZIP\nPackets"
+router -down-> sec_layer : "commands"
+sec_layer -down-> serial : "encrypted\nframes"
+serial -down-> ncp : "UART"
+
+' Horizontal connections
+router -right-> mdns_svc : "node\nevents"
+router -right-> ip : "address\nallocation"
+nm_fsm -down-> s2_incl : "secure\ninclusion"
+rd -down-> sec_layer : "probing"
+
+' Feedback paths
+ncp -up-> serial : "callbacks"
+serial -up-> ts2 : "frames"
+ts2 -up-> sec_layer : "reassembly"
+sec_layer -up-> router : "reports"
+router -up-> clients : "ZIP\nResponses"
+
+mdns_svc -up-> mdns_client : "mDNS\nannouncements"
+
+note right of router
+  Main event loop
+  - Dispatches all events
+  - Coordinates subsystems
+  - Manages lifecycle
+end note
+
+note right of nm_fsm
+  30+ state FSM
+  - Node inclusion/exclusion
+  - Learn mode
+  - Network healing
+  - Smart Start
+end note
+
+note right of s2_proto
+  Security 2 Features:
+  - AES-128-CCM
+  - Curve25519 ECDH
+  - 3 security classes
+  - SPAN replay protection
+end note
+
+note right of serial
+  UART Protocol:
+  - Binary framing
+  - Callbacks
+  - 119 KB codebase
+
+  ⚠ Keys transmitted
+  unencrypted
+end note
+
+@enduml

@@ -1,0 +1,139 @@
+@startuml
+!theme plain
+
+title S2 Inclusion State Machine - Add Mode (Controller)\nSecure Node Inclusion with ECDH Key Exchange
+
+skinparam state {
+    BackgroundColor<<normal>> LightBlue
+    BackgroundColor<<wait_user>> LightYellow
+    BackgroundColor<<error>> LightCoral
+    BackgroundColor<<complete>> LightGreen
+}
+
+[*] --> S2_IDLE
+
+state S2_IDLE : **Idle**\nNo inclusion in progress
+
+state S2_AWAITING_KEX_REPORT <<normal>> : **Wait KEX Report**\nWaiting for joining node\nto report capabilities\nTimeout: 10s
+state S2_AWAITING_KEX_USER <<wait_user>> : **Wait User Accept**\nUser grants keys\nTimeout: 240s
+state S2_AWAITING_PUBLIC_KEY <<normal>> : **Wait Public Key**\nWaiting for node's\nECDH public key\nTimeout: 10s
+state S2_AWAITING_DSK_USER <<wait_user>> : **Wait User Accept DSK**\nUser verifies DSK\n(first 5 digits)\nTimeout: 240s
+state S2_AWAITING_ECHO_KEX_SET <<normal>> : **Wait Echo KEX Set**\nNode echoes granted keys\nTimeout: 10s
+state S2_AWAITING_NET_KEY_GET <<normal>> : **Wait Net Key Get**\nNode requests network key\nfor each security class\nTimeout: 10s
+state S2_AWAITING_NET_KEY_VERIFY <<normal>> : **Wait Net Key Verify**\nNode verifies received key\nTimeout: 10s
+state S2_AWAITING_TRANSFER_END <<normal>> : **Wait Transfer End**\nFinal confirmation\nTimeout: 10s
+state S2_ERROR_SENT <<error>> : **Error Sent**\nInclusion failed\nNotifying node
+
+S2_IDLE --> S2_AWAITING_KEX_REPORT : s2_inclusion_including_start()\nSend KEX GET
+
+S2_AWAITING_KEX_REPORT --> S2_AWAITING_KEX_USER : KEX Report received\nNode capabilities known
+
+S2_AWAITING_KEX_USER --> S2_AWAITING_PUBLIC_KEY : s2_inclusion_key_grant()\nKeys granted\nSend KEX SET
+S2_AWAITING_KEX_USER --> S2_ERROR_SENT : s2_inclusion_abort()\nUser rejected
+
+S2_AWAITING_PUBLIC_KEY --> S2_AWAITING_DSK_USER : Public Key received\n**ECDH compute**\nShared secret calculated
+
+S2_AWAITING_DSK_USER --> S2_AWAITING_ECHO_KEX_SET : s2_inclusion_challenge_response()\nDSK verified\nSend Public Key
+S2_AWAITING_DSK_USER --> S2_ERROR_SENT : s2_inclusion_abort()\nDSK rejected
+
+S2_AWAITING_ECHO_KEX_SET --> S2_AWAITING_NET_KEY_GET : Echo KEX Set received\nNode confirmed keys
+
+S2_AWAITING_NET_KEY_GET -down-> S2_AWAITING_NET_KEY_VERIFY : Net Key Get received\nSend Network Key\n(encrypted with\nshared secret)
+
+S2_AWAITING_NET_KEY_VERIFY --> S2_AWAITING_NET_KEY_GET : Net Key Verify received\n(more classes)\nNext key distribution
+S2_AWAITING_NET_KEY_VERIFY --> S2_AWAITING_TRANSFER_END : Net Key Verify received\n(final key)\nAll keys distributed
+
+S2_AWAITING_TRANSFER_END --> S2_IDLE : Transfer End received\n**✓ Inclusion Complete**\nNode securely joined
+
+' Error paths
+S2_AWAITING_KEX_REPORT --> S2_ERROR_SENT : Timeout /\nInvalid KEX
+S2_AWAITING_PUBLIC_KEY --> S2_ERROR_SENT : Timeout /\nInvalid key
+S2_AWAITING_ECHO_KEX_SET --> S2_ERROR_SENT : Timeout /\nMismatch
+S2_AWAITING_NET_KEY_GET --> S2_ERROR_SENT : Timeout
+S2_AWAITING_NET_KEY_VERIFY --> S2_ERROR_SENT : Timeout /\nVerify failed
+S2_AWAITING_TRANSFER_END --> S2_ERROR_SENT : Timeout
+
+S2_ERROR_SENT --> S2_IDLE : Error sent /\n**✗ Inclusion Failed**
+
+' Retransmissions (state loops)
+S2_AWAITING_KEX_REPORT --> S2_AWAITING_KEX_REPORT : Retransmit KEX GET
+S2_AWAITING_KEX_USER --> S2_AWAITING_KEX_USER : Duplicate KEX Report
+S2_AWAITING_PUBLIC_KEY --> S2_AWAITING_PUBLIC_KEY : Retransmit KEX SET\nDuplicate KEX Report
+S2_AWAITING_DSK_USER --> S2_AWAITING_DSK_USER : Duplicate frames
+S2_AWAITING_ECHO_KEX_SET --> S2_AWAITING_ECHO_KEX_SET : Retransmit Public Key
+S2_AWAITING_NET_KEY_GET --> S2_AWAITING_NET_KEY_GET : Duplicate frames
+S2_AWAITING_NET_KEY_VERIFY --> S2_AWAITING_NET_KEY_VERIFY : Retransmit Net Key
+S2_AWAITING_TRANSFER_END --> S2_AWAITING_TRANSFER_END : Duplicate frames
+
+note right of S2_AWAITING_KEX_REPORT
+  **KEX Report** contains:
+  - Requested keys (bitmask)
+  - Supported key types
+  - CSA (Client-Side Auth) flag
+  - Echo flag
+
+  **Example**:
+  - S2_AUTHENTICATED
+  - S2_ACCESS
+end note
+
+note right of S2_AWAITING_PUBLIC_KEY
+  **ECDH Key Exchange**:
+  1. Controller generates keypair
+  2. Node sends public key (32 bytes)
+  3. Controller computes shared secret
+     using Curve25519
+  4. Shared secret → KEK (Key Encryption Key)
+end note
+
+note right of S2_AWAITING_DSK_USER
+  **DSK Verification**:
+  User verifies first 5 digits
+  of 16-byte DSK.
+
+  **Example DSK**:
+  42424-12345-67890-...
+
+  **User confirms**: 42424
+
+  **Purpose**: Man-in-the-middle
+  protection during key exchange
+end note
+
+note right of S2_AWAITING_NET_KEY_GET
+  **Key Distribution**:
+  For each granted security class:
+  1. Node requests: Net Key Get
+  2. Controller sends: Net Key Report
+     (encrypted with KEK)
+  3. Node verifies: Net Key Verify
+
+  **Multiple Iterations**:
+  If multiple security classes
+  are granted (e.g., Authenticated
+  + Access), this repeats.
+end note
+
+note bottom of S2_ERROR_SENT
+  **Error Reasons**:
+  - KEX_FAIL_CANCEL (user abort)
+  - KEX_FAIL_AUTH (DSK mismatch)
+  - KEX_FAIL_KEX_KEY (invalid public key)
+  - KEX_FAIL_KEX_SCHEMES (unsupported)
+  - KEX_FAIL_DECRYPT (key verify failed)
+end note
+
+note top of S2_IDLE
+  **Events to Upper Layer**:
+  - S2_NODE_INCLUSION_KEX_REPORT_EVENT
+  - S2_NODE_INCLUSION_PUBLIC_KEY_CHALLENGE_EVENT
+  - S2_NODE_INCLUSION_COMPLETE_EVENT
+  - S2_NODE_INCLUSION_FAILED_EVENT
+
+  **Upper Layer Actions**:
+  - s2_inclusion_key_grant()
+  - s2_inclusion_challenge_response()
+  - s2_inclusion_abort()
+end note
+
+@enduml

@@ -1,0 +1,232 @@
+@startuml
+!theme plain
+skinparam component {
+    BackgroundColor<<crypto>> LightYellow
+    BackgroundColor<<protocol>> LightBlue
+    BackgroundColor<<keys>> LightGreen
+    BackgroundColor<<storage>> LightGray
+}
+
+title S2 Security Architecture\nAuthenticated Encryption and Key Management
+
+package "S2 Protocol Layer" {
+    component "S2 Frame Handler" as s2_frame <<protocol>> {
+        [Encryption Engine]
+        [Decryption Engine]
+        [SPAN Manager]
+        [Nonce Generator]
+    }
+
+    component "S2 Inclusion" as s2_incl <<protocol>> {
+        [KEX (Key Exchange)]
+        [ECDH Handler]
+        [DSK Verification]
+        [Key Distribution]
+    }
+}
+
+package "Cryptographic Primitives" <<crypto>> {
+    component "AES Operations" {
+        [AES-128 ECB]
+        [AES-128 CBC]
+        [AES-CCM]
+    }
+
+    component "Key Derivation" {
+        [CMAC (AES-CMAC)]
+        [NIST SP 800-108\nKDF]
+    }
+
+    component "Public Key Crypto" {
+        [Curve25519 ECDH]
+        [Public Key Gen]
+        [Shared Secret]
+    }
+
+    component "Random Generation" {
+        [CTR-DRBG\n(NIST Approved)]
+    }
+}
+
+package "Key Management" <<keys>> {
+    database "Key Storage" as keystore <<storage>> {
+        [Network Keys (5 slots)]
+        [Public/Private Keys]
+        [Temp Keys]
+    }
+
+    component "Key Slots" as slots {
+        note as N1
+          Slot 0: Unauthenticated
+          Slot 1: Authenticated
+          Slot 2: Access Control
+          Slot 3: LR Authenticated
+          Slot 4: LR Access
+          Slot 5: Temp Key (inclusion)
+          Slot 6: Network Key (current)
+        end note
+    }
+
+    database "SPAN Table" as span <<storage>> {
+        [Per-Node SPAN]
+        [Sequence Numbers]
+        [Replay Protection]
+    }
+}
+
+package "Security Classes" {
+    component "S2_UNAUTHENTICATED" as unauth {
+        note
+          Basic encryption
+          No authentication
+          Key Slot 0
+        end note
+    }
+
+    component "S2_AUTHENTICATED" as auth {
+        note
+          Authenticated encryption
+          DSK-based authentication
+          Key Slot 1
+        end note
+    }
+
+    component "S2_ACCESS" as access {
+        note
+          Highest security
+          Full authentication
+          Key Slot 2
+        end note
+    }
+}
+
+' === ENCRYPTION FLOW ===
+component "Application Layer" as app
+
+app -down-> s2_frame : Plaintext command\n+ Security class
+s2_frame -down-> [Encryption Engine] : Frame + Key slot
+[Encryption Engine] -right-> [AES-CCM] : Encrypt
+[AES-CCM] -right-> [CMAC] : Auth tag
+[Encryption Engine] -down-> [Nonce Generator] : Get nonce
+[Nonce Generator] -right-> span : Update SPAN
+[Encryption Engine] -down-> keystore : Get network key
+keystore --> [Encryption Engine] : Network key
+[Encryption Engine] --> s2_frame : Encrypted frame
+s2_frame --> app : Encrypted Z-Wave frame
+
+' === DECRYPTION FLOW ===
+s2_frame -down-> [Decryption Engine] : Encrypted frame
+[Decryption Engine] -down-> span : Verify SPAN\n(replay check)
+span --> [Decryption Engine] : SPAN valid
+[Decryption Engine] -right-> [AES-CCM] : Decrypt
+[AES-CCM] -right-> [CMAC] : Verify auth tag
+[Decryption Engine] -down-> keystore : Get network key
+keystore --> [Decryption Engine] : Network key
+[Decryption Engine] --> s2_frame : Plaintext command
+
+' === INCLUSION FLOW ===
+s2_incl -down-> [ECDH Handler] : Start inclusion
+[ECDH Handler] -right-> [Curve25519 ECDH] : Generate shared secret
+[Curve25519 ECDH] -down-> [Public Key Gen] : Generate keypair
+[Public Key Gen] -right-> [Random Generation] : Get random bytes
+[ECDH Handler] -down-> [DSK Verification] : Verify DSK\n(first 5 digits)
+[DSK Verification] --> [Key Distribution] : DSK verified
+[Key Distribution] -right-> [Key Derivation] : Derive keys
+[Key Derivation] --> keystore : Store keys
+keystore -up-> s2_frame : Keys available
+
+note right of s2_frame
+  **S2 Frame Format** (Encrypted):
+  ┌─────────────────────────────┐
+  │ Command Class: SECURITY_2   │
+  │ Command: MESSAGE_ENCAP      │
+  │ Properties (with extensions)│
+  │ Sequence Number (1 byte)    │
+  │ [Extensions...]             │
+  │ Encrypted Payload (N bytes) │
+  │ Auth Tag (8 bytes)          │
+  └─────────────────────────────┘
+
+  **Properties**:
+  - Security class (3 bits)
+  - Sequence flag
+  - Extension bit
+end note
+
+note right of [AES-CCM]
+  **AES-CCM Mode**:
+  - Counter with CBC-MAC
+  - Authenticated encryption
+  - 128-bit key
+  - 8-byte authentication tag
+  - Nonce: 13 bytes
+    (Sender, Receiver, Seq)
+end note
+
+note right of span
+  **SPAN Table** (per node):
+  - TX sequence number
+  - RX sequence number
+  - Out-of-sync flag
+  - Persisted on shutdown
+
+  **Replay Protection**:
+  - Reject duplicate sequence
+  - Reject out-of-order (old)
+  - Auto re-sync on desync
+end note
+
+note right of [Curve25519 ECDH]
+  **ECDH Key Exchange**:
+  - Elliptic curve: Curve25519
+  - Public key: 32 bytes
+  - Private key: 32 bytes
+  - Shared secret: 32 bytes
+
+  **DSK (Device Specific Key)**:
+  - 16 bytes
+  - User verifies first 5 digits
+  - QR code for Smart Start
+end note
+
+note bottom of [Key Derivation]
+  **NIST SP 800-108 KDF**:
+  - CMAC-based PRF
+  - Domain separation
+  - Multiple output keys
+
+  **Derived Keys**:
+  - Network Key (per class)
+  - MPAN Key (multicast)
+  - Personalization String
+end note
+
+' === SECURITY CLASS SELECTION ===
+unauth -up-> s2_frame : Slot 0
+auth -up-> s2_frame : Slot 1
+access -up-> s2_frame : Slot 2
+
+note bottom of unauth
+  **Use Cases**:
+  - Basic encryption
+  - No user interaction
+  - Sensors, switches
+end note
+
+note bottom of auth
+  **Use Cases**:
+  - Door locks
+  - Garage openers
+  - Most secure devices
+  **Requires**: DSK verification
+end note
+
+note bottom of access
+  **Use Cases**:
+  - High-security applications
+  - Access control systems
+  - Critical infrastructure
+  **Requires**: DSK + Grant
+end note
+
+@enduml
