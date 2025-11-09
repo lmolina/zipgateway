@@ -150,9 +150,39 @@ To speed up the build process, native build can be deported to the host using
 different containerization techniques (docker, systemd, chroot, qemu, binfmt).
 Check the [DevTools](./DevTools/) directory for more information.
 
+## DOCUMENTATION
+
+Comprehensive architecture and technical documentation is available in the `doc/` folder:
+
+### Core Documentation
+- **[doc/ARCHITECTURE.md](doc/ARCHITECTURE.md)** - Complete architecture overview with three-tier design, component descriptions, and data flows
+- **[doc/DOCUMENTATION_INDEX.md](doc/DOCUMENTATION_INDEX.md)** - Index of all documentation with quick reference guide
+- **[doc/RELEASE_NOTE.md](doc/RELEASE_NOTE.md)** - Version 7.18.05 release notes and features
+
+### Architecture Diagrams (PlantUML)
+- **[doc/architecture_overview.puml](doc/architecture_overview.puml)** - High-level component architecture
+- **[doc/network_management_fsm.puml](doc/network_management_fsm.puml)** - Network Management state machine (30+ states)
+- **[doc/transport_service2_fsm.puml](doc/transport_service2_fsm.puml)** - Transport Service 2 fragmentation FSM
+- **[doc/component_interactions.puml](doc/component_interactions.puml)** - Component interaction sequences
+
+### Security Documentation (S2)
+- **[doc/s2_security_architecture.puml](doc/s2_security_architecture.puml)** - S2 security architecture and cryptography
+- **[doc/s2_inclusion_fsm.puml](doc/s2_inclusion_fsm.puml)** - S2 inclusion state machine (Add Mode)
+- **[doc/s2_learn_mode_fsm.puml](doc/s2_learn_mode_fsm.puml)** - S2 inclusion state machine (Learn Mode)
+- **[doc/s2_key_management.puml](doc/s2_key_management.puml)** - S2 key lifecycle and SPAN management
+- **[libs2/README.md](libs2/README.md)** - S2 library implementation details
+
+### API Documentation (Doxygen)
+Build HTML documentation:
+```sh
+cd build
+make doc
+# Open build/doc/html/index.html in browser
+```
+
 ## MORE
 
-Additional documentation is available in doc folder or online:
+Additional resources:
 
 - https://github.com/SiliconLabs/zipgateway/
 - https://www.silabs.com/wireless/z-wave/specification

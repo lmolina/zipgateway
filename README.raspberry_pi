@@ -5,12 +5,14 @@ Compile Z/IP Gateway for Raspberry pi 3B+
 sudo apt-get install cmake gcc bison flex xsltproc libssl1.0-dev libusb-1.0-0-dev
 
 2. Build
-$ mkdir build 
-$ cd build 
+$ mkdir build
+$ cd build
 $ cmake -DRPI3PLUS=Y ..
 $ make package
 Find the Debian .deb package
-$ ls zipgateway-7.00.0-Linux-rpi3plus-armhf.deb
+$ ls zipgateway-7.18.*-Linux-rpi3plus-armhf.deb
+
+Note: The exact version number may vary. Current version is 7.18.05.
 
 
 
