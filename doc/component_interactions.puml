@@ -1,0 +1,190 @@
+@startuml
+!theme plain
+title Z/IP Gateway Component Interactions\nTypical Command Flow (S2 Encrypted)
+
+actor "ZIP Client" as client
+participant "ZIP Router" as router
+participant "Network\nManagement" as nm
+participant "Resource\nDirectory" as rd
+participant "Security\nLayer" as sec
+participant "S2 Protocol" as s2
+participant "Transport\nService 2" as ts2
+participant "Serial API" as serial
+participant "Z-Wave\nController" as ncp
+participant "Z-Wave\nNode" as node
+
+== Initialization ==
+router -> nm : Initialize
+router -> rd : Initialize
+router -> sec : Initialize
+router -> s2 : Initialize
+router -> serial : Initialize
+serial -> ncp : Open UART
+serial <-- ncp : Version Info
+router <-- serial : Controller Ready
+
+== Node Inclusion (S2) ==
+client -> router : NODE_ADD command
+router -> nm : Start add mode
+nm -> serial : ZW_AddNode()
+serial -> ncp : Add node command
+serial <-- ncp : Add node callback\n(node found)
+nm <-- serial : Node found event
+nm -> s2 : Start S2 inclusion
+s2 -> serial : Send KEX Get
+serial -> ncp : Transmit
+ncp -> node : KEX Get (RF)
+ncp <-- node : KEX Report (RF)
+serial <-- ncp : Receive callback
+s2 <-- serial : KEX Report
+nm <-- s2 : KEX Report event
+nm -> router : User interaction needed
+router -> client : **KEX Report event**\n(grant keys?)
+client -> router : Grant keys
+router -> nm : Keys granted
+nm -> s2 : Grant keys
+s2 -> s2 : ECDH keypair generation
+s2 -> serial : Send KEX Set
+serial -> ncp : Transmit
+ncp -> node : KEX Set (RF)
+ncp <-- node : Public Key (RF)
+serial <-- ncp : Receive callback
+s2 <-- serial : Public Key
+s2 -> s2 : **ECDH shared secret**\nCurve25519
+nm <-- s2 : Public key event
+nm -> router : DSK verification needed
+router -> client : **DSK Challenge event**\n(verify first 5 digits)
+client -> router : DSK verified
+router -> nm : DSK accepted
+nm -> s2 : DSK response
+s2 -> serial : Send Public Key
+... Key Distribution (multiple rounds) ...
+s2 -> serial : Send Network Key\n(encrypted with KEK)
+serial -> ncp : Transmit
+ncp -> node : Network Key (RF)
+ncp <-- node : Verify (RF)
+serial <-- ncp : Receive callback
+s2 <-- serial : Net Key Verify
+s2 -> s2 : Store keys in keystore
+nm <-- s2 : **S2 Inclusion Complete**
+nm -> rd : Start node probe
+rd -> serial : NIF request
+rd -> serial : Version CC queries
+rd -> serial : Endpoint discovery
+rd <-- serial : Node info
+nm <-- rd : **Probe complete**
+nm -> router : IPv4 assignment
+router -> nm : DHCP done
+nm -> router : **Node added successfully**
+router -> client : NODE_ADD_STATUS\n(Done)
+
+== Encrypted Command (S2) ==
+client -> router : Switch Binary Set\n(to node, S2 encrypted)
+router -> sec : Route command
+sec -> s2 : Encrypt (S2_AUTHENTICATED)
+s2 -> s2 : Get SPAN nonce
+s2 -> s2 : AES-CCM encrypt +\nauth tag
+sec <-- s2 : Encrypted frame
+router <-- sec : Encrypted frame
+router -> ts2 : Check size
+ts2 -> ts2 : Frame fits in single packet
+router <-- ts2 : No fragmentation needed
+router -> serial : Send frame
+serial -> ncp : ZW_SendData()
+ncp -> node : **Encrypted S2 frame** (RF)
+ncp <-- node : ACK (RF)
+serial <-- ncp : Transmit callback (OK)
+router <-- serial : Transmit status
+client <-- router : **ZIP ACK**
+
+== Encrypted Report (S2) ==
+ncp <-- node : Report (RF, encrypted)
+serial <-- ncp : Receive callback
+router <-- serial : Encrypted frame
+router -> sec : Decrypt
+sec -> s2 : Decrypt (check SPAN)
+s2 -> s2 : Verify SPAN\n(replay check)
+s2 -> s2 : AES-CCM decrypt +\nverify auth tag
+sec <-- s2 : Plaintext report
+router <-- sec : Plaintext report
+router -> rd : Update node state
+client <-- router : **Switch Binary Report**
+
+== Large Frame (Fragmentation) ==
+client -> router : Firmware Update\n(large frame)
+router -> sec : Encrypt
+sec -> s2 : Encrypt payload
+router <-- sec : Encrypted payload
+router -> ts2 : Fragment
+ts2 -> ts2 : **Split into fragments**\nAdd session ID
+loop For each fragment
+  ts2 -> serial : Send fragment
+  serial -> ncp : Transmit
+  ncp -> node : Fragment (RF)
+  ncp <-- node : ACK (RF)
+  serial <-- ncp : Callback
+  ts2 <-- serial : Fragment sent
+end
+ncp <-- node : Fragment Complete (RF)
+serial <-- ncp : Receive callback
+ts2 <-- serial : Fragment Complete
+router <-- ts2 : **Transmission complete**
+client <-- router : ZIP ACK
+
+== Node Wake-Up (Mailbox) ==
+ncp <-- node : Wake-Up Notification (RF)
+serial <-- ncp : Receive callback
+router <-- serial : Wake-Up
+router -> router : Check mailbox
+router -> router : Queue has 3 commands
+loop For each queued command
+  router -> sec : Encrypt
+  sec -> s2 : Encrypt
+  router <-- sec : Encrypted
+  router -> serial : Send
+  serial -> ncp : Transmit
+  ncp -> node : Command (RF)
+  ncp <-- node : ACK (RF)
+  serial <-- ncp : Callback
+  router <-- serial : Done
+end
+router -> serial : No More Information
+serial -> ncp : Transmit
+ncp -> node : No More Info (RF)
+node -> node : **Go back to sleep**
+
+== mDNS Announcement ==
+rd -> rd : Node probe complete
+rd -> router : Node info updated
+router -> router : mDNS service
+router -> router : Generate mDNS record
+router -> router : Multicast announcement\n(LAN)
+note right
+  mDNS announces:
+  - Device name
+  - IPv6/IPv4 address
+  - Device type
+  - Command classes
+  - Endpoints
+end note
+
+== S2 SPAN Re-synchronization ==
+ncp <-- node : Encrypted frame\n(out-of-sync SPAN)
+serial <-- ncp : Receive callback
+router <-- serial : Encrypted frame
+router -> sec : Decrypt
+sec -> s2 : Decrypt
+s2 -> s2 : **SPAN check failed**
+sec <-- s2 : Decrypt failed
+router <-- sec : Error
+router -> serial : Send Nonce Get
+serial -> ncp : Transmit
+ncp -> node : Nonce Get (RF)
+ncp <-- node : Nonce Report (SOS=1) (RF)
+serial <-- ncp : Receive callback
+s2 <-- serial : Nonce Report
+s2 -> s2 : **Re-sync SPAN**
+router <-- s2 : Re-sync complete
+router -> client : S2_RESYNCHRONIZATION_EVENT\n(informational)
+
+@enduml

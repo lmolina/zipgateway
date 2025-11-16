@@ -1,0 +1,133 @@
+@startuml
+!theme plain
+
+title S2 Inclusion State Machine - Learn Mode (Joining Node)\nNode Being Included into Network
+
+skinparam state {
+    BackgroundColor<<normal>> LightBlue
+    BackgroundColor<<wait_user>> LightYellow
+    BackgroundColor<<complete>> LightGreen
+}
+
+[*] --> S2_IDLE
+
+state S2_IDLE : **Idle**\nNo inclusion in progress
+
+state S2_AWAITING_KEX_GET <<normal>> : **Wait KEX Get**\nWaiting for controller\nto query capabilities\nTimeout: 10s
+state S2_AWAITING_KEX_SET <<normal>> : **Wait KEX Set**\nController granting keys\nTimeout: 240s (user input)
+state S2_AWAITING_PUBLIC_KEY <<normal>> : **Wait Public Key**\nController's ECDH\npublic key\nTimeout: 10s
+state S2_AWAITING_DSK_USER <<wait_user>> : **Wait User Accept**\nUser verifies controller DSK\nTimeout: 240s
+state S2_SENDING_ECHO_KEX <<normal>> : **Sending Echo KEX**\nEchoing granted keys
+state S2_AWAITING_ECHO_KEX_REPORT <<normal>> : **Wait Echo KEX Report**\nController ACK\nTimeout: 10s
+state S2_AWAITING_NET_KEY_REPORT <<normal>> : **Wait Net Key Report**\nReceiving network key\nTimeout: 10s
+state S2_KEY_EXCHANGED <<complete>> : **Key Exchanged**\nAll keys received\nReady for final transfer
+state S2_SENDING_TRANSFER_END <<normal>> : **Sending Transfer End**\nFinal confirmation
+
+S2_IDLE --> S2_AWAITING_KEX_GET : s2_inclusion_joining_start()\nSend Node Info Frame
+
+S2_AWAITING_KEX_GET --> S2_AWAITING_KEX_SET : KEX Get received\nSend KEX Report\n(capabilities)
+
+S2_AWAITING_KEX_SET --> S2_AWAITING_PUBLIC_KEY : KEX Set received\nKeys granted by controller
+
+S2_AWAITING_PUBLIC_KEY --> S2_AWAITING_DSK_USER : Public Key received\n**ECDH compute**\nShared secret calculated
+
+S2_AWAITING_DSK_USER --> S2_SENDING_ECHO_KEX : s2_inclusion_challenge_response()\nDSK verified\nSend Public Key
+S2_AWAITING_DSK_USER --> S2_IDLE : s2_inclusion_abort()\nDSK rejected
+
+S2_SENDING_ECHO_KEX --> S2_AWAITING_ECHO_KEX_REPORT : Echo KEX Report sent
+
+S2_AWAITING_ECHO_KEX_REPORT --> S2_AWAITING_NET_KEY_REPORT : Echo KEX Report ACK\nSend Net Key Get\n(first class)
+
+S2_AWAITING_NET_KEY_REPORT --> S2_AWAITING_NET_KEY_REPORT : Net Key Report received\n**Decrypt with KEK**\nSend Net Key Verify\n(more classes)
+S2_AWAITING_NET_KEY_REPORT --> S2_KEY_EXCHANGED : Net Key Report received\n(final key)\nAll keys obtained
+
+S2_KEY_EXCHANGED --> S2_SENDING_TRANSFER_END : Send Transfer End
+
+S2_SENDING_TRANSFER_END --> S2_IDLE : Transfer End sent\n**✓ Inclusion Complete**\nNode securely joined
+
+' Retransmissions
+S2_AWAITING_KEX_GET --> S2_AWAITING_KEX_GET : Discovery Complete\n(no KEX Get yet)
+S2_AWAITING_KEX_SET --> S2_AWAITING_KEX_SET : Duplicate frames
+S2_AWAITING_PUBLIC_KEY --> S2_AWAITING_PUBLIC_KEY : Duplicate frames
+S2_AWAITING_DSK_USER --> S2_AWAITING_DSK_USER : Duplicate frames
+S2_SENDING_ECHO_KEX --> S2_SENDING_ECHO_KEX : Retransmit Echo KEX
+S2_AWAITING_ECHO_KEX_REPORT --> S2_AWAITING_ECHO_KEX_REPORT : Duplicate frames
+S2_AWAITING_NET_KEY_REPORT --> S2_AWAITING_NET_KEY_REPORT : Duplicate frames
+S2_KEY_EXCHANGED --> S2_KEY_EXCHANGED : Duplicate frames
+S2_SENDING_TRANSFER_END --> S2_SENDING_TRANSFER_END : Retransmit\nTransfer End
+
+' Error paths
+S2_AWAITING_KEX_GET --> S2_IDLE : Timeout /\n**✗ Failed**
+S2_AWAITING_KEX_SET --> S2_IDLE : Timeout /\nRejected
+S2_AWAITING_PUBLIC_KEY --> S2_IDLE : Timeout /\nInvalid key
+S2_AWAITING_ECHO_KEX_REPORT --> S2_IDLE : Timeout
+S2_AWAITING_NET_KEY_REPORT --> S2_IDLE : Timeout /\nDecrypt failed
+
+note right of S2_AWAITING_KEX_GET
+  **Discovery Phase**:
+  Node sends Node Info Frame
+  and waits for controller
+  to initiate S2 inclusion
+  with KEX Get command.
+end note
+
+note right of S2_AWAITING_DSK_USER
+  **Learn Mode DSK Verification**:
+  Node verifies controller's DSK
+  to prevent man-in-the-middle.
+
+  **Options**:
+  1. Display on screen
+  2. Compare with known value
+  3. Accept automatically
+     (less secure)
+
+  **Typical**: Node displays
+  controller's DSK for user
+  to verify against controller.
+end note
+
+note right of S2_AWAITING_NET_KEY_REPORT
+  **Network Key Reception**:
+  For each granted security class:
+  1. Node: Send Net Key Get
+  2. Controller: Net Key Report
+     (encrypted with KEK from ECDH)
+  3. Node: Decrypt and store
+  4. Node: Send Net Key Verify
+
+  **Verification**:
+  Node proves it successfully
+  decrypted the network key
+  by sending encrypted challenge.
+end note
+
+note bottom of S2_KEY_EXCHANGED
+  **Keys Now Available**:
+  - Network keys stored
+  - Ready for secure communication
+  - Can exchange Transfer End
+  - Inclusion almost complete
+
+  **Next**:
+  - Protocol assigns NodeID
+  - Network integration
+  - Node probing
+end note
+
+note top of S2_IDLE
+  **Learn Mode Differences**:
+  - Node initiates (NIF)
+  - Node requests keys
+  - Node verifies controller DSK
+  - Shorter overall flow
+  - No multi-step user interaction
+
+  **Similarities to Add Mode**:
+  - Same ECDH algorithm
+  - Same key distribution
+  - Same security classes
+  - Same timeout values
+end note
+
+@enduml

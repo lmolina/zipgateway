@@ -1,0 +1,464 @@
+# Z/IP Gateway Architecture Metadata
+# Single source of truth for architecture documentation
+# This file can be used by AI agents and documentation generators
+
+version: "7.18.05"
+last_updated: "2025-11-09"
+maintenance_mode: true
+successor_project: "https://github.com/SiliconLabsSoftware/z-wave-protocol-controller"
+
+# Component Registry
+components:
+  # Tier 1: Gateway Core
+  - id: "zip_router"
+    name: "ZIP Router"
+    tier: 1
+    file: "src/ZIP_Router.c"
+    lines_of_code: 1813
+    type: "core"
+    responsibilities:
+      - "Event dispatching and processing"
+      - "Main event loop coordination"
+      - "Component lifecycle management"
+      - "Integration of all subsystems"
+    dependencies:
+      - "network_management"
+      - "resource_directory"
+      - "bridge"
+      - "mailbox"
+      - "security_layer"
+    interfaces:
+      - "ZIP Client commands (UDP)"
+      - "Internal event bus"
+
+  - id: "network_management"
+    name: "Network Management FSM"
+    tier: 1
+    file: "src/CC_NetworkManagement.c"
+    lines_of_code: 3420
+    type: "state_machine"
+    state_count: 30
+    responsibilities:
+      - "Node inclusion (classic, S2, Smart Start, proxy)"
+      - "Node removal and replacement"
+      - "Learn mode (inclusion/exclusion)"
+      - "Network healing and topology management"
+    state_machine: "network_management_fsm"
+    dependencies:
+      - "s2_inclusion"
+      - "serial_api"
+      - "resource_directory"
+    diagrams:
+      - "doc/network_management_fsm.puml"
+
+  - id: "resource_directory"
+    name: "Resource Directory"
+    tier: 1
+    file: "src/ResourceDirectory.c"
+    lines_of_code: 2930
+    type: "core"
+    responsibilities:
+      - "Node capability caching"
+      - "Multi-endpoint support"
+      - "Node interview and probing"
+      - "Command class version tracking"
+    storage: "SQLite database (zipgateway.db)"
+    dependencies:
+      - "serial_api"
+      - "security_layer"
+
+  - id: "bridge"
+    name: "Bridge Module"
+    tier: 1
+    file: "src/Bridge.c"
+    type: "core"
+    responsibilities:
+      - "IP emulation for Z-Wave devices"
+      - "Virtual node management"
+      - "ICMP Echo (ping) emulation"
+      - "Association proxy"
+    dependencies:
+      - "ipv4_ipv6"
+
+  - id: "mailbox"
+    name: "Mailbox Service"
+    tier: 1
+    file: "src/Mailbox.c"
+    type: "core"
+    queue_capacity: 2000
+    responsibilities:
+      - "Command queuing for battery-powered nodes"
+      - "Wake-up notification handling"
+      - "Queue persistence"
+    timeouts:
+      - name: "NAK Waiting notification"
+        value: "60s"
+      - name: "UDP ACK request"
+        value: "600s (10 minutes)"
+
+  # Tier 2: Security & Transport
+  - id: "s2_protocol"
+    name: "S2 Protocol"
+    tier: 2
+    file: "libs2/protocol/S2.c"
+    size_kb: 52
+    type: "security"
+    responsibilities:
+      - "AES-128-CCM encryption/decryption"
+      - "SPAN management for replay protection"
+      - "Nonce generation and validation"
+      - "Multi-key support (5 security classes)"
+    cryptography:
+      - "AES-128 (ECB, CBC, CCM modes)"
+      - "AES-CMAC authentication"
+      - "NIST SP 800-108 key derivation"
+    key_slots: 7
+    security_classes:
+      - id: 0
+        name: "S2_UNAUTHENTICATED"
+        description: "Basic encryption without authentication"
+      - id: 1
+        name: "S2_AUTHENTICATED"
+        description: "Authenticated encryption with DSK verification"
+      - id: 2
+        name: "S2_ACCESS"
+        description: "Highest security level for access control"
+      - id: 3
+        name: "S2_LR_AUTHENTICATED"
+        description: "Long Range authenticated"
+      - id: 4
+        name: "S2_LR_ACCESS"
+        description: "Long Range access control"
+    diagrams:
+      - "doc/s2_security_architecture.puml"
+      - "doc/s2_key_management.puml"
+
+  - id: "s2_inclusion"
+    name: "S2 Inclusion FSM"
+    tier: 2
+    file: "libs2/inclusion/s2_inclusion.c"
+    size_kb: 81
+    type: "state_machine"
+    responsibilities:
+      - "ECDH key exchange (Curve25519)"
+      - "DSK verification (user confirms first 5 digits)"
+      - "Network key distribution"
+      - "Security class negotiation"
+    state_machines:
+      - name: "Add Mode FSM"
+        states: 15
+        perspective: "Controller including node"
+      - name: "Learn Mode FSM"
+        states: 10
+        perspective: "Node being included"
+    timeouts:
+      - name: "Protocol operations"
+        value: "10s"
+      - name: "User interaction (DSK verification)"
+        value: "240s"
+    cryptography:
+      - "Curve25519 ECDH"
+      - "KEK derivation"
+      - "Network key encryption"
+    diagrams:
+      - "doc/s2_inclusion_fsm.puml"
+      - "doc/s2_learn_mode_fsm.puml"
+
+  - id: "transport_service2"
+    name: "Transport Service 2"
+    tier: 2
+    file: "libs2/transport_service/transport2_fsm.c"
+    type: "state_machine"
+    state_count: 9
+    responsibilities:
+      - "Frame fragmentation for large datagrams"
+      - "Fragment reassembly"
+      - "Missing fragment detection"
+      - "CRC16 verification"
+    states:
+      - "ST_IDLE"
+      - "ST_RECEIVING"
+      - "ST_SEND_FRAG_COMPLETE"
+      - "ST_SEND_FRAG_REQ"
+      - "ST_SEND_FRAG_WAIT"
+      - "ST_FIND_MISS_FRAG"
+      - "ST_SEND_FRAG"
+      - "ST_SEND_LAST_FRAG"
+      - "ST_WAIT_ACK"
+    diagrams:
+      - "doc/transport_service2_fsm.puml"
+
+  - id: "security_layer"
+    name: "Security Layer"
+    tier: 2
+    file: "src/security_layer.c"
+    lines_of_code: 16000
+    type: "core"
+    responsibilities:
+      - "Route frames to S0 or S2"
+      - "Security class selection"
+    dependencies:
+      - "s2_protocol"
+      - "s0_protocol"
+
+  - id: "serial_api"
+    name: "Serial API"
+    tier: 2
+    file: "src/Serialapi.c"
+    size_kb: 119
+    type: "transport"
+    protocol: "UART binary protocol"
+    responsibilities:
+      - "Communication with Z-Wave controller (NCP)"
+      - "Frame acknowledgments"
+      - "Callback handling"
+      - "Network management commands"
+    security_note: "Network keys transmitted unencrypted over UART"
+
+  # Tier 3: Networking
+  - id: "mdns_service"
+    name: "mDNS Service"
+    tier: 3
+    file: "src/mDNSService.c"
+    size_kb: 70
+    type: "network"
+    protocol: "mDNS (RFC 6763)"
+    responsibilities:
+      - "Service discovery for Z-Wave nodes"
+      - "Automatic node announcement"
+      - "Dynamic resource updates"
+      - "Device type publishing"
+
+  - id: "ipv4_ipv6"
+    name: "IPv4/IPv6 Support"
+    tier: 3
+    type: "network"
+    responsibilities:
+      - "Dual-stack IP implementation"
+      - "NAT support"
+      - "Address assignment"
+    default_config:
+      ipv6_prefix: "fd00:aaaa::/48"
+      ipv4_subnet: "42.42.42.0/24"
+
+# State Machines
+state_machines:
+  - id: "network_management_fsm"
+    name: "Network Management State Machine"
+    component: "network_management"
+    state_count: 30
+    states:
+      # Grouped by operation type
+      idle:
+        - "NM_IDLE"
+        - "NM_WAITING_FOR_PROBE"
+        - "NM_SENDING_NODE_INFO"
+
+      add_node:
+        - "NM_WAIT_FOR_ADD"
+        - "NM_NODE_FOUND"
+        - "NM_WAIT_FOR_PROTOCOL"
+        - "NM_WAIT_FOR_SECURE_ADD"
+        - "NM_WAIT_FOR_PROBE_AFTER_ADD"
+        - "NM_WAIT_DHCP"
+        - "NM_PREPARE_SUC_INCLISION"
+        - "NM_WIAT_FOR_SUC_INCLUSION"
+        - "NM_WAIT_FOR_NEIGHBOR_UPDATE_AFTER_SECURE_ADD"
+
+      smart_start:
+        - "NM_WAIT_FOR_SELF_DESTRUCT"
+        - "NM_WAIT_FOR_SELF_DESTRUCT_RETRY"
+        - "NM_WAIT_FOR_TX_TO_SELF_DESTRUCT"
+        - "NM_WAIT_FOR_TX_TO_SELF_DESTRUCT_RETRY"
+        - "NM_WAIT_FOR_SELF_DESTRUCT_REMOVAL"
+        - "NM_WAIT_FOR_SELF_DESTRUCT_REMOVAL_RETRY"
+
+      remove_node:
+        - "NM_WAITING_FOR_NODE_REMOVAL"
+        - "NM_REMOVING_ASSOCIATIONS"
+        - "NM_WAITING_FOR_FAIL_NODE_REMOVAL"
+
+      learn_mode:
+        - "NM_LEARN_MODE"
+        - "NM_LEARN_MODE_STARTED"
+        - "NM_WAIT_FOR_SECURE_LEARN"
+        - "NM_WAIT_FOR_MDNS"
+        - "NM_WAIT_FOR_PROBE_BY_SIS"
+        - "NM_WAIT_FOR_OUR_PROBE"
+        - "NM_SET_DEFAULT"
+
+      other:
+        - "NM_REPLACE_FAILED_REQ"
+        - "NM_PROXY_INCLUSION_WAIT_NIF"
+        - "NM_WAIT_FOR_NODE_INFO_PROBE"
+        - "NM_WAITING_FOR_NODE_NEIGH_UPDATE"
+        - "NM_WAITING_FOR_RETURN_ROUTE_ASSIGN"
+        - "NM_WAITING_FOR_RETURN_ROUTE_DELETE"
+
+    timeouts:
+      - name: "Add/Remove node"
+        value: 6000
+        unit: "ms"
+      - name: "Learn mode"
+        value: 6000
+        unit: "ms"
+      - name: "Smart Start self-destruct"
+        value: 3000
+        unit: "ms"
+      - name: "Smart Start retry"
+        value: 240000
+        unit: "ms"
+
+  - id: "transport_service2_fsm"
+    name: "Transport Service 2 FSM"
+    component: "transport_service2"
+    state_count: 9
+    states:
+      - "ST_IDLE"
+      - "ST_RECEIVING"
+      - "ST_SEND_FRAG_COMPLETE"
+      - "ST_SEND_FRAG_REQ"
+      - "ST_SEND_FRAG_WAIT"
+      - "ST_FIND_MISS_FRAG"
+      - "ST_SEND_FRAG"
+      - "ST_SEND_LAST_FRAG"
+      - "ST_WAIT_ACK"
+
+# Data Flows
+data_flows:
+  - name: "Encrypted Command (LAN to PAN)"
+    direction: "lan_to_pan"
+    steps:
+      - component: "zip_client"
+        action: "Send command"
+      - component: "zip_router"
+        action: "Receive and route"
+      - component: "security_layer"
+        action: "Select S0/S2"
+      - component: "s2_protocol"
+        action: "Encrypt with AES-CCM"
+      - component: "transport_service2"
+        action: "Fragment if needed"
+      - component: "serial_api"
+        action: "Send to NCP"
+      - component: "ncp"
+        action: "Transmit RF"
+      - component: "zwave_node"
+        action: "Receive and decrypt"
+
+  - name: "Report (PAN to LAN)"
+    direction: "pan_to_lan"
+    steps:
+      - component: "zwave_node"
+        action: "Send encrypted report"
+      - component: "ncp"
+        action: "Receive RF"
+      - component: "serial_api"
+        action: "Forward to gateway"
+      - component: "transport_service2"
+        action: "Reassemble if fragmented"
+      - component: "s2_protocol"
+        action: "Decrypt and verify SPAN"
+      - component: "security_layer"
+        action: "Route to application"
+      - component: "zip_router"
+        action: "Dispatch to client"
+      - component: "zip_client"
+        action: "Receive report"
+
+# Key Technologies
+technologies:
+  cryptography:
+    - name: "AES-128"
+      modes: ["ECB", "CBC", "CCM"]
+      usage: "S2 frame encryption"
+    - name: "Curve25519"
+      usage: "ECDH key exchange during S2 inclusion"
+    - name: "AES-CMAC"
+      usage: "Message authentication and key derivation"
+    - name: "CTR-DRBG"
+      standard: "NIST SP 800-90A"
+      usage: "Cryptographically secure random number generation"
+
+  protocols:
+    - name: "Z-Wave"
+      versions: ["Classic", "Long Range"]
+    - name: "IPv4"
+      features: ["NAT", "DHCP"]
+    - name: "IPv6"
+      features: ["Stateless autoconfiguration"]
+    - name: "DTLS"
+      version: "1.2"
+      usage: "LAN-side security"
+    - name: "mDNS"
+      rfc: "RFC 6763"
+      usage: "Service discovery"
+
+  standards:
+    - "NIST SP 800-108: Key Derivation Functions"
+    - "NIST SP 800-90A: Random Number Generation"
+    - "NIST SP 800-38C: CCM Mode"
+    - "RFC 7748: Elliptic Curves for Security"
+    - "RFC 6763: DNS-Based Service Discovery"
+
+# Performance Characteristics
+performance:
+  resource_usage:
+    ram: "50-100 MB (network size dependent)"
+    cpu: "Low (event-driven)"
+    storage: "10-50 MB database"
+
+  limitations:
+    - "Maximum 2000 mailbox entries"
+    - "Maximum 232 classic Z-Wave nodes or 4000 Long Range nodes"
+    - "5s timeout for most operations"
+    - "240s timeout for S2 user interaction"
+
+# Security Considerations
+security:
+  threats:
+    - name: "UART key exposure"
+      severity: "high"
+      mitigation: "Physical access protection required"
+      description: "Network keys transmitted unencrypted over UART to NCP"
+
+    - name: "Database key storage"
+      severity: "medium"
+      mitigation: "File system permissions and encryption"
+      description: "Network keys stored in plaintext in SQLite database"
+
+    - name: "SPAN desynchronization"
+      severity: "medium"
+      mitigation: "Automatic re-sync with notification"
+      description: "Power cycles or network issues can cause SPAN desync"
+
+  best_practices:
+    - "Always verify DSK during S2 inclusion"
+    - "Persist SPAN table across reboots"
+    - "Protect physical access to gateway device"
+    - "Use file system encryption"
+    - "Restrict database file permissions"
+
+# Build Configuration
+build:
+  system: "CMake 3.7+"
+  platforms:
+    - "Linux (ARM, x86)"
+    - "Raspberry Pi 3B+"
+    - "macOS"
+
+  dependencies:
+    - name: "OpenSSL"
+      version: "1.1.0+"
+      usage: "DTLS/TLS"
+    - name: "libusb"
+      version: "1.0"
+      usage: "USB communication"
+    - name: "JSON-C"
+      usage: "Configuration parsing"
+
+  testing:
+    framework: "Unity + CTest"
+    tools:
+      - "Valgrind (memory leak detection)"
+      - "cppcheck (static analysis)"

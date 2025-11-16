@@ -1,0 +1,193 @@
+@startuml
+!theme plain
+title S2 Key Management and Lifecycle
+
+participant "Gateway" as gw
+database "Keystore" as ks
+database "SPAN Table" as span
+participant "S2 Inclusion" as incl
+participant "S2 Protocol" as s2
+participant "Node" as node
+
+== Initialization ==
+gw -> ks : Load network keys from\npersistent storage
+ks --> gw : Network keys (5 slots)
+gw -> span : Load SPAN table from\ndatabase
+span --> gw : Per-node SPAN entries
+gw -> gw : Initialize S2 protocol
+
+== Key Generation (First Time) ==
+gw -> ks : Check if keys exist
+ks --> gw : No keys
+gw -> gw : Generate network keys
+loop For each security class
+  gw -> gw : Generate random 16 bytes\n(CTR-DRBG)
+  gw -> ks : Store network key\n(Slot 0-4)
+end
+gw -> ks : Persist to storage
+
+== S2 Inclusion - Key Exchange ==
+gw -> incl : Start inclusion
+incl -> incl : Generate ECDH keypair
+note right
+  Private key: 32 bytes random
+  Public key: Curve25519(private)
+end note
+incl -> node : Send public key
+incl <-- node : Receive node public key
+incl -> incl : **ECDH shared secret**\nCurve25519(priv, pub)
+incl -> incl : Derive KEK (Key Encryption Key)\nusing NIST KDF
+note right
+  KEK = KDF(shared_secret,
+            constant_prk,
+            "ExpandedKeys",
+            256)
+end note
+loop For each granted security class
+  incl <-- node : Net Key Get
+  incl -> ks : Get network key for class
+  ks --> incl : Network key
+  incl -> incl : **Encrypt network key**\nAES-128-ECB(KEK, network_key)
+  incl -> node : Net Key Report (encrypted)
+  incl <-- node : Net Key Verify
+  incl -> incl : Verify decryption success
+end
+incl -> incl : Store granted keys for node
+incl -> span : Initialize SPAN entry
+span -> span : TX seq = 0\nRX seq = 0
+incl --> gw : Inclusion complete
+
+== Secure Transmission (Encryption) ==
+gw -> s2 : Encrypt command for node\n(Security class: S2_AUTH)
+s2 -> ks : Get network key\n(Slot 1: Authenticated)
+ks --> s2 : Network key
+s2 -> span : Get TX sequence number
+span --> s2 : TX seq = N
+s2 -> s2 : Build nonce\n(13 bytes)
+note right
+  Nonce = Sender (1 byte) ||
+          Receiver (1 byte) ||
+          Sequence (1 byte) ||
+          Random (10 bytes)
+end note
+s2 -> s2 : **AES-CCM encrypt**\n+ auth tag (8 bytes)
+note right
+  CCM = Counter mode (encryption)
+        + CBC-MAC (authentication)
+  Key: Network key
+  Nonce: 13 bytes
+  Additional data: Header
+  Output: Ciphertext + Tag
+end note
+s2 -> span : Increment TX seq\nTX seq = N+1
+span -> span : Store updated seq
+s2 --> gw : Encrypted frame +\nauth tag
+gw -> node : **Transmit encrypted frame**
+
+== Secure Reception (Decryption) ==
+gw <-- node : **Receive encrypted frame**
+gw -> s2 : Decrypt frame
+s2 -> s2 : Extract sequence number
+s2 -> span : Get RX sequence number
+span --> s2 : Expected RX seq = M
+s2 -> s2 : **SPAN check**
+alt Sequence valid
+  s2 -> ks : Get network key\n(from security class in frame)
+  ks --> s2 : Network key
+  s2 -> s2 : **AES-CCM decrypt**\n+ verify auth tag
+  alt Auth tag valid
+    s2 -> span : Update RX seq\nRX seq = M+1
+    span -> span : Store updated seq
+    s2 --> gw : Plaintext command
+  else Auth tag invalid
+    s2 --> gw : **Decrypt failed**
+    note right
+      Possible causes:
+      - Wrong key
+      - Corrupted frame
+      - Attacker
+    end note
+  end
+else Sequence out-of-sync
+  s2 --> gw : **SPAN out-of-sync**
+  gw -> node : Send Nonce Get
+  gw <-- node : Nonce Report (SOS=1)
+  gw -> span : **Re-synchronize SPAN**
+  span -> span : Reset sequence tracking
+  gw -> node : Retry transmission
+end
+
+== SPAN Persistence ==
+gw -> gw : Shutdown initiated
+gw -> span : Persist SPAN table
+span -> span : Save to database\n(per-node sequences)
+note right
+  Critical for replay protection!
+  Without persistence, all nodes
+  would need re-sync on startup.
+end note
+span --> gw : SPAN saved
+
+== Key Rotation (Future Enhancement) ==
+note over gw, node
+  Current implementation does NOT support
+  key rotation. Network keys are permanent
+  for the lifetime of the network.
+
+  **Key Rotation** would require:
+  1. New key generation
+  2. Distribution to all nodes
+  3. Synchronized switchover
+  4. Old key retirement
+
+  This is not implemented in Z/IP Gateway.
+end note
+
+== Key Storage Security ==
+note over ks
+  **Keystore Security**:
+  - Network keys stored in plain text
+  - Database file permissions critical
+  - No hardware security module (HSM)
+  - Physical access = key compromise
+
+  **Recommendations**:
+  - Restrict database file permissions
+  - Encrypt filesystem
+  - Use secure boot
+  - Protect against physical access
+end note
+
+== SPAN Table Structure ==
+note over span
+  **Per-Node SPAN Entry**:
+  - NodeID (2 bytes)
+  - TX sequence (1 byte per class)
+  - RX sequence (1 byte per class)
+  - Out-of-sync flag
+  - Timestamp (last update)
+
+  **Persistence**:
+  - SQLite database
+  - Updated on each frame
+  - Critical for security
+end note
+
+== Security Classes ==
+note over ks
+  **Key Slots**:
+  Slot 0: S2_UNAUTHENTICATED
+  Slot 1: S2_AUTHENTICATED
+  Slot 2: S2_ACCESS
+  Slot 3: S2_LR_AUTHENTICATED
+  Slot 4: S2_LR_ACCESS
+  Slot 5: TEMP_KEY (inclusion)
+  Slot 6: NETWORK_KEY (current)
+
+  **Each Node Stores**:
+  - Granted key bitmask
+  - Keys received during inclusion
+  - SPAN table per key
+end note
+
+@enduml

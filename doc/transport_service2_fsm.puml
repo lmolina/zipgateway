@@ -1,0 +1,154 @@
+@startuml
+!theme plain
+skinparam state {
+    BackgroundColor<<idle>> LightGray
+    BackgroundColor<<receive>> LightBlue
+    BackgroundColor<<send>> LightGreen
+}
+
+title Transport Service 2 State Machine\nFrame Fragmentation and Reassembly
+
+[*] --> ST_IDLE
+
+state ST_IDLE <<idle>> : **IDLE**\nNo transmission in progress\nNo reception in progress
+
+' === RECEIVE STATE MACHINE ===
+state "Receive State Machine" as ReceiveGroup {
+    state ST_RECEIVING <<receive>> : **Receiving Fragments**\nAccumulating frame data\nTimeout tracking
+    state ST_SEND_FRAG_COMPLETE <<receive>> : **Send Fragment Complete**\nNotify sender all\nfragments received
+    state ST_SEND_FRAG_REQ <<receive>> : **Send Fragment Request**\nRequest missing fragments\nfrom sender
+    state ST_SEND_FRAG_WAIT <<receive>> : **Wait for Fragments**\nWaiting for sender\nto resend missing
+    state ST_FIND_MISS_FRAG <<receive>> : **Find Missing**\nAnalyze received fragments\nIdentify gaps
+
+    ST_RECEIVING --> ST_FIND_MISS_FRAG : Last fragment\nreceived
+    ST_FIND_MISS_FRAG --> ST_SEND_FRAG_COMPLETE : No missing\nfragments
+    ST_FIND_MISS_FRAG --> ST_SEND_FRAG_REQ : Missing\nfragments found
+    ST_SEND_FRAG_REQ --> ST_SEND_FRAG_WAIT : Fragment request\nsent
+    ST_SEND_FRAG_WAIT --> ST_RECEIVING : Missing fragment\nreceived
+    ST_SEND_FRAG_WAIT --> ST_FIND_MISS_FRAG : Timeout /\nRetry
+    ST_SEND_FRAG_COMPLETE --> ST_IDLE : ACK sent /\nFrame complete
+}
+
+' === SEND STATE MACHINE ===
+state "Send State Machine" as SendGroup {
+    state ST_SEND_FRAG <<send>> : **Sending Fragment**\nTransmitting current\nfragment
+    state ST_SEND_LAST_FRAG <<send>> : **Sending Last Fragment**\nTransmitting final\nfragment with last bit
+    state ST_WAIT_ACK <<send>> : **Wait for ACK**\nWaiting for\nFragment Complete\nor Fragment Request
+
+    ST_SEND_FRAG --> ST_SEND_FRAG : Send next\nfragment
+    ST_SEND_FRAG --> ST_SEND_LAST_FRAG : Sending\nlast fragment
+    ST_SEND_LAST_FRAG --> ST_WAIT_ACK : Last fragment\nsent
+    ST_WAIT_ACK --> ST_SEND_FRAG : Fragment Request\nreceived (retransmit)
+    ST_WAIT_ACK --> ST_IDLE : Fragment Complete\nreceived / Success
+}
+
+' === MAIN TRANSITIONS ===
+ST_IDLE --> ST_RECEIVING : EV_START_RECV\n(First fragment received)
+ST_IDLE --> ST_SEND_FRAG : EV_START_SEND\n(Application wants to send)
+
+ST_RECEIVING --> ST_RECEIVING : EV_RECV_NEW_FRAG\n(Additional fragment)
+
+' === ERROR HANDLING ===
+ST_RECEIVING --> ST_IDLE : Timeout /\nSession error
+ST_SEND_FRAG_WAIT --> ST_IDLE : Max retries /\nTimeout
+ST_WAIT_ACK --> ST_IDLE : Timeout /\nTransmission failed
+
+' === SESSION MANAGEMENT ===
+ST_RECEIVING --> ST_IDLE : EV_DIFF_SESSION\n(New session started)
+ST_SEND_FRAG_WAIT --> ST_IDLE : EV_DIFF_NODE\n(Different sender)
+
+note right of ST_IDLE
+  **Idle State**
+  - Ready for TX or RX
+  - No session active
+  - No timers running
+end note
+
+note right of ReceiveGroup
+  **Receive Process**:
+  1. Receive fragments
+  2. Check for missing fragments
+  3. Request retransmission if needed
+  4. Send Fragment Complete when done
+
+  **Features**:
+  - Missing fragment detection
+  - Automatic retransmission request
+  - CRC16 verification
+  - Session ID tracking
+
+  **Timers**:
+  - Fragment RX timeout
+  - Fragment request timeout
+end note
+
+note right of SendGroup
+  **Send Process**:
+  1. Fragment large datagram
+  2. Send fragments sequentially
+  3. Mark last fragment
+  4. Wait for completion ACK
+  5. Retransmit on request
+
+  **Features**:
+  - Automatic fragmentation
+  - Selective retransmission
+  - Session management
+  - CRC16 checksum
+
+  **Parameters**:
+  - Session ID (unique per transmission)
+  - Fragment size (protocol dependent)
+  - Last fragment bit
+end note
+
+note top of ReceiveGroup
+  **Fragment Frame Format**:
+  ┌────────────────────────────────┐
+  │ Command Class: TRANSPORT_SVC   │
+  │ Command: FIRST_FRAGMENT or     │
+  │          SUBSEQUENT_FRAGMENT   │
+  │ Session ID (4 bits)            │
+  │ Datagram Size (11 bits)        │
+  │ Datagram Offset (11 bits)      │
+  │ Fragment Payload (N bytes)     │
+  │ [CRC16 on last fragment]       │
+  └────────────────────────────────┘
+end note
+
+note bottom of SendGroup
+  **Supported Modes**:
+  - **Singlecast**: Point-to-point with ACK
+  - **Multicast**: One-to-many (no retransmission)
+
+  **Error Recovery**:
+  - Fragment Request (specific fragments)
+  - Fragment Complete (success ACK)
+  - Timeout and retry logic
+  - Max retry limit
+end note
+
+' === SPECIAL CASES ===
+state "Special Handling" as SpecialGroup {
+    note as N1
+      **Tie-Break Handling**:
+      If both nodes start transmission
+      simultaneously, use tie-break rules
+      based on NodeID.
+    end note
+
+    note as N2
+      **Duplicate Detection**:
+      Discard duplicate fragments
+      based on Session ID and offset.
+    end note
+
+    note as N3
+      **Session Timeout**:
+      - RX timeout: ~5 seconds
+      - TX timeout: ~5 seconds
+      - Max retries: 3
+    end note
+}
+
+@enduml
