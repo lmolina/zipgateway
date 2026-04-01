@@ -37,7 +37,7 @@
 #include "random.h"
 #ifdef TEST_MULTICAST_TX
 #include "multicast_group_manager.h"
-//#include "multicast_tlv.h"
+#include "multicast_tlv.h"
 #endif
 
 #define S2_NUM_KEY_CLASSES (s2_get_key_count()) /* S0 key already included*/
@@ -56,8 +56,8 @@ struct S2* s2_ctx;
  * Multicast transmission
  */
 struct {
-  uint8_t l_node;
-  uint8_t r_node;
+  nodeid_t l_node;
+  nodeid_t r_node;
   const uint8_t *dest_nodemask;
   const uint8_t *data;
   uint8_t  data_len;
