@@ -65,6 +65,8 @@ add_subdirectory(test_multicast_auto)
 
 add_subdirectory(zw_abort_sendrequest)
 
+add_subdirectory(s2_wrap_lr_followup)
+
 add_subdirectory(CC_fw_upd)
 
 add_executable(eeprom-printer ${CMAKE_SOURCE_DIR}/test/eeprom-printer.c)
