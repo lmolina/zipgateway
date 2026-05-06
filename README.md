@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: Silicon Laboratories Inc. <https://www.silabs.com/> -->
+<!-- SPDX-License-Identifier: LicenseRef-MSLA -->
+
 # ZGW Test Bench
 
 Test bench for the Z/IP Gateway (ZGW): harness scripts and runners that

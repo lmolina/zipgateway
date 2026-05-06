@@ -25,5 +25,3 @@ do
   power_off_board "$addr"
   echo
 done
-
-

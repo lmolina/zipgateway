@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: Silicon Laboratories Inc. <https://www.silabs.com/> -->
+<!-- SPDX-License-Identifier: LicenseRef-MSLA -->
+
 # AGENTS.md -- zgw-test-bench
 
 Shared agent context for this repo. Self-contained: a coworker or AI agent
@@ -90,9 +93,9 @@ Splitting machine vs test config is a backlog item (see personal PLAN).
 
 ## Quality gates
 
-Run `pre-commit install` once per checkout. Hooks: shellcheck, shfmt,
-trailing-whitespace, end-of-file-fixer, mixed-line-ending, gitlint
-(commit message). Never bypass with `--no-verify`.
+Run `pre-commit install` once per checkout. Hooks currently include
+trailing-whitespace, end-of-file-fixer, mixed-line-ending,
+check-merge-conflict, and reuse lint. Never bypass with `--no-verify`.
 
 ## What an AI agent must NOT do
 

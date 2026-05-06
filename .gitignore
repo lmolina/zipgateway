@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Silicon Laboratories Inc. <https://www.silabs.com/>
+#
+# SPDX-License-Identifier: LicenseRef-MSLA
+
 # Input binaries (CI artefacts, ZGW .deb). Tracked: only .gitkeep and README.
 artifacts/*
 !artifacts/.gitkeep

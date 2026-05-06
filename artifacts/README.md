@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: Silicon Laboratories Inc. <https://www.silabs.com/> -->
+<!-- SPDX-License-Identifier: LicenseRef-MSLA -->
+
 # Artifacts
 
 Input binaries used by the test bench. This directory is gitignored
