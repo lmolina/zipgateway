@@ -6,7 +6,8 @@
 # The status of the network and ZIP/GW is not clear, nor consistent after the experiments, thus the
 # need to remove what we can.
 
-source ./conf
+script_folder=$(dirname "$0")
+source "${script_folder}/conf"
 
 /etc/init.d/zipgateway stop
 apt purge zipgateway

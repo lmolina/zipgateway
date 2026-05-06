@@ -106,7 +106,7 @@ echo ")" >> dsks
 dos2unix dsks
 
 i=0
-for addr in ${ADDR[@]};
+for addr in "${ADDR[@]}";
 do
   echo "dut $i"
   i=$((i + 1))

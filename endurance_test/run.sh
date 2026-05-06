@@ -4,19 +4,19 @@
 # SPDX-License-Identifier: LicenseRef-MSLA
 
 mydir=$(dirname "$0")
-source ${mydir}/conf
-source ${mydir}/utils.sh
+source "${mydir}/conf"
+source "${mydir}/utils.sh"
 
 START_TIME=$(date +%s)
 
-mkdir "${logs_dir}"
+mkdir -p "${logs_dir}"
 trap clean_exit SIGINT
 trap launch_reference_client SIGCHLD
 
 sudo /etc/init.d/zipgateway stop
 backups="/var/log/zipgateway-$(date +%Y%m%dT%H%M%S).old"
-sudo mkdir ${backups}
-sudo mv /var/log/ziprouter.serlog* /var/log/zipgateway.log* ${backups}
+sudo mkdir -p "${backups}"
+sudo mv /var/log/ziprouter.serlog* /var/log/zipgateway.log* "${backups}"
 sudo /etc/init.d/zipgateway start
 
 # The zipgateway takes a long time to be fully operational
