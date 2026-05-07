@@ -7,7 +7,7 @@ LOCATION=testbed-1
 REGION="0x01"
 
 artifacts_url="https://<HOST>/artifactory/gsdk-generic-development/sisdk-2025.12/2713"
-artifacts="../artifacts"
+artifacts="artifacts"
 
 ADDR=(
 jlink-slot-0.example
