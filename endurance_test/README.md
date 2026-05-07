@@ -16,8 +16,8 @@ for hardware bed, host roles, and conventions.
 | 4 | `[test-controller]` | `./04_provisioning.sh` (rsyncs `provision_on_host.sh` + `utils.sh` + `conf` + `${artifacts}/dsks` to `[zgw-host]`, runs the worker over SSH, pulls `${logs_dir}/` back) |
 | 5 | manual              | power on devices one-by-one in node-id order, waiting for the inclusion to complete |
 | 6 | `[zgw-host]`        | verify node IDs in `reference_client` (`pl_list`, `list`)                         |
-| 7 | `[zgw-host]`        | `./07_run.sh`                                                                     |
-| 8 | manual              | monitor logs; CTRL+C to stop                                                      |
+| 7 | `[test-controller]` | `./07_run.sh` (rsyncs `run_on_host.sh` + `utils.sh` + `conf` to `[zgw-host]`, runs test over SSH, pulls logs back) |
+| 8 | manual              | monitor logs; CTRL+C on `[test-controller]` propagates to the `[zgw-host]` |
 
 ## Files
 
@@ -26,8 +26,9 @@ for hardware bed, host roles, and conventions.
 - `01_..07_*.sh` -- step scripts above.
 - `zgw_cleanup.sh` -- runs on `[zgw-host]`; invoked by `03_setup_zipgateway.sh` after rsync. Not user-triggered; missing numeric prefix is the signal.
 - `provision_on_host.sh` -- runs on `[zgw-host]`; invoked by `04_provisioning.sh` after rsync. Same convention: no numeric prefix = host worker.
+- `run_on_host.sh` -- runs on `[zgw-host]`; invoked by `07_run.sh` after rsync. Same convention.
 - `power_off_all_boards.sh` -- manual recovery utility.
 
-Steps 3 and 4 prerequisites on `[zgw-host]`: SSH key-based access for `${ZGW_USER}` and passwordless `sudo`. Without those, the driver scripts exit with a precondition error.
+Steps 3, 4, and 7 prerequisites on `[zgw-host]`: SSH key-based access for `${ZGW_USER}` and passwordless `sudo`. Without those, the driver scripts exit with a precondition error.
 
 Run output (logs, captures, intermediate `dsks`) is gitignored.
