@@ -10,7 +10,7 @@ source dsks
 source "${script_folder}/conf"
 source "${script_folder}/utils.sh"
 
-launch_reference_client
+launch_reference_client $ZGW_STAGE_DIR/reference_client
 
 declare -i count=0
 for device in "${dsks[@]}"; do

@@ -90,11 +90,11 @@ do
   dsk=$(commander --apack device zwave-qrcode --timeout 2000 --tif swd --device "${DEVICE[${i}]}" --ip "$addr")
   dsk=$(echo "$dsk" | grep -o 'INFO: QR code: .*')
   dsk=$(echo "$dsk" | sed -e 's|.*: ............\(.....\)\(.....\)\(.....\)\(.....\)\(.....\)\(.....\)\(.....\)\(.....\).*]|\1-\2-\3-\4-\5-\6-\7-\8|g')
-  echo "$dsk" >> dsks
+  echo "$dsk" >> "${artifacts}/dsks"
   echo
   power_off_board "$addr"
   echo "=========================================="
 done
-echo ")" >> dsks
+echo ")" >> "${artifacts}/dsks"
 
-dos2unix dsks
+dos2unix "${artifacts}/dsks"

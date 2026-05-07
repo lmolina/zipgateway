@@ -81,7 +81,13 @@ ROUTE_END_NODE_8="0E0607080903"
 
 NL_WAKE_UP_INTERVAL_VALUE_SEC="000014"
 
-ZIP_GATEWAY="/home/pi/zip_gateway/v7.18.3/Binaries/zipgateway-7.18.03-Linux-armhf.deb"
+ZGW_HOST=<ZGW_HOST>
+ZGW_USER=pi
+ZGW_STAGE_DIR=/home/$ZGW_USER/zgw-test-bench-stage
+ZGW_REBOOT_WAIT_SEC=60
+
+ZIP_GATEWAY="zipgateway-7.18.03-Linux-armhf.deb"
+LIBZWAVEIP="libzwaveip-7.18.02-Linux-stretch-armhf-Binaries.zip"
 ZipLanGw6="<ZIP_LAN_GW6>"
 ZipPanIp6="<ZIP_PAN_IP6>"
 ZipLanIp6="<ZIP_LAN_IP6>"

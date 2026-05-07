@@ -9,10 +9,13 @@
 script_folder=$(dirname "$0")
 source "${script_folder}/conf"
 
+unzip -d "$ZGW_STAGE_DIR" "$ZGW_STAGE_DIR/$LIBZWAVEIP"
+
 /etc/init.d/zipgateway stop
 apt purge zipgateway
 
 find / -iname "*zipgateway*" \
+  -not -path "$ZGW_STAGE_DIR/*" \
   -not -path "/home/*" \
   -not -path "/var/lib/dpkg/*" \
   -not -path "/proc/*" \
@@ -20,7 +23,7 @@ find / -iname "*zipgateway*" \
 
 echo "zipgateway zipgateway/restart_nw select I will reboot later" > /tmp/preseed.txt
 debconf-set-selections < /tmp/preseed.txt
-DEBIAN_FRONTEND=noninteractive apt install -f "${ZIP_GATEWAY}"
+DEBIAN_FRONTEND=noninteractive apt install -f "$ZGW_STAGE_DIR/$ZIP_GATEWAY"
 
 # Deactivate STP on the bridge
 sed -i "/bridge_stp*/d" "/etc/network/interfaces.d/br-lan"

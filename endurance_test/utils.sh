@@ -48,12 +48,13 @@ function reset_board {
 
 function launch_reference_client {
   echo "Launching reference client"
+  reference_client="$1"
 
   # HACK: to re-launch the reference_client when it fails due to sigfault...
   exec 3> >(
   while true;
   do
-    ~/zip_gateway/v7.18.3/Binaries/libzwaveip-7.18.02-Linux-stretch-armhf-Binaries/reference_client -g ${logs_dir}/reference_client.log -s ${ZipLanIp6} -p ${ZipPSK}
+    "$reference_client" -g ${logs_dir}/reference_client.log -s ${ZipLanIp6} -p ${ZipPSK}
     sleep 1
   done
 )
