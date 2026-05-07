@@ -88,6 +88,8 @@ ZGW_REBOOT_WAIT_SEC=60
 
 ZIP_GATEWAY="zipgateway-7.18.03-Linux-armhf.deb"
 LIBZWAVEIP="libzwaveip-7.18.02-Linux-stretch-armhf-Binaries.zip"
+LIBZWAVEIP_DIR="${LIBZWAVEIP%.zip}"
+REFERENCE_CLIENT="${ZGW_STAGE_DIR}/${LIBZWAVEIP_DIR}/reference_client"
 ZipLanGw6="<ZIP_LAN_GW6>"
 ZipPanIp6="<ZIP_PAN_IP6>"
 ZipLanIp6="<ZIP_LAN_IP6>"

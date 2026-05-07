@@ -11,7 +11,7 @@ START_TIME=$(date +%s)
 
 mkdir -p "${logs_dir}"
 trap clean_exit SIGINT
-trap "launch_reference_client $ZGW_STAGE_DIR/reference_client" SIGCHLD
+trap launch_reference_client SIGCHLD
 
 sudo /etc/init.d/zipgateway stop
 backups="/var/log/zipgateway-$(date +%Y%m%dT%H%M%S).old"
@@ -22,7 +22,7 @@ sudo /etc/init.d/zipgateway start
 # The zipgateway takes a long time to be fully operational
 sleep 60
 
-launch_reference_client $ZGW_STAGE_DIR/reference_client
+launch_reference_client
 
 homeid=$(grep HomeID /var/log/zipgateway.log | cut -f4 -d' ')
 CONTROLLER="Static Controller [${homeid}-0001-000]"

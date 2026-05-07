@@ -47,14 +47,13 @@ function reset_board {
 }
 
 function launch_reference_client {
-  echo "Launching reference client"
-  reference_client="$1"
+  echo "Launching reference client (${REFERENCE_CLIENT})"
 
   # HACK: to re-launch the reference_client when it fails due to sigfault...
   exec 3> >(
   while true;
   do
-    "$reference_client" -g ${logs_dir}/reference_client.log -s ${ZipLanIp6} -p ${ZipPSK}
+    "${REFERENCE_CLIENT}" -g ${logs_dir}/reference_client.log -s ${ZipLanIp6} -p ${ZipPSK}
     sleep 1
   done
 )
