@@ -68,7 +68,7 @@ done
 
 cleanup_boards
 
-echo "dsks=(" > dsks
+echo "dsks=(" > "${script_folder}/${artifacts}/dsks"
 for i in $(seq 0 $((${#ADDR[@]} - 1)));
 do
   echo
