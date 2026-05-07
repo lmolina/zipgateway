@@ -92,16 +92,9 @@ do
   dsk=$(echo "$dsk" | sed -e 's|.*: ............\(.....\)\(.....\)\(.....\)\(.....\)\(.....\)\(.....\)\(.....\)\(.....\).*]|\1-\2-\3-\4-\5-\6-\7-\8|g')
   echo "$dsk" >> dsks
   echo
+  power_off_board "$addr"
   echo "=========================================="
 done
 echo ")" >> dsks
 
 dos2unix dsks
-
-i=0
-for addr in "${ADDR[@]}";
-do
-  echo "dut $i"
-  i=$((i + 1))
-  power_off_board "$addr"
-done
