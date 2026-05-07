@@ -6,7 +6,7 @@ LOCATION=testbed-1
 
 REGION="0x01"
 
-artifacts_url="not used in this test"
+artifacts_url="https://<HOST>/artifactory/gsdk-generic-development/sisdk-2025.12/2713"
 artifacts="../artifacts"
 
 ADDR=(
@@ -23,29 +23,29 @@ jlink-slot-9.example
 )
 
 HEX_1=(
-$artifacts/bootloader-uart-xmodem-zwave-otw_brd4205b.s37
-$artifacts/bootloader-uart-xmodem-zwave-otw_brd4205b.s37
-$artifacts/bootloader-storage-internal-single-zwave-ota_brd4205b.s37
-$artifacts/bootloader-storage-internal-single-zwave-ota_brd4205b.s37
-$artifacts/bootloader-storage-internal-single-zwave-ota_brd4205b.s37
-$artifacts/bootloader-storage-internal-single-zwave-ota_brd4205b.s37
-$artifacts/bootloader-storage-internal-single-zwave-ota_brd4205b.s37
-$artifacts/bootloader-storage-internal-single-zwave-ota_brd4205b.s37
-$artifacts/bootloader-storage-internal-single-zwave-ota_brd4205b.s37
-$artifacts/bootloader-storage-internal-single-zwave-ota_brd4205b.s37
+$artifacts/bootloader-uart-xmodem-zwave-otw-brd4205b.s37
+$artifacts/bootloader-uart-xmodem-zwave-otw-brd4205b.s37
+$artifacts/bootloader-storage-internal-single-zwave-ota-brd4205b.s37
+$artifacts/bootloader-storage-internal-single-zwave-ota-brd4205b.s37
+$artifacts/bootloader-storage-internal-single-zwave-ota-brd4205b.s37
+$artifacts/bootloader-storage-internal-single-zwave-ota-brd4205b.s37
+$artifacts/bootloader-storage-internal-single-zwave-ota-brd4205b.s37
+$artifacts/bootloader-storage-internal-single-zwave-ota-brd4205b.s37
+$artifacts/bootloader-storage-internal-single-zwave-ota-brd4205b.s37
+$artifacts/bootloader-storage-internal-single-zwave-ota-brd4205b.s37
 )
 
 HEX_2=(
-$artifacts/zwave_ncp_zniffer_ZGM230S_brd4205b_REGION_EU.hex
-$artifacts/zwave_ncp_serial_api_controller_ZGM230S_brd4205b_REGION_EU.hex
-$artifacts/zwave_soc_switch_on_off_ZGM230S_brd4205b_REGION_EU.hex
-$artifacts/zwave_soc_switch_on_off_ZGM230S_brd4205b_REGION_EU.hex
-$artifacts/zwave_soc_switch_on_off_ZGM230S_brd4205b_REGION_EU.hex
-$artifacts/zwave_soc_switch_on_off_ZGM230S_brd4205b_REGION_EU.hex
-$artifacts/zwave_soc_door_lock_keypad_ZGM230S_brd4205b_REGION_EU.hex
-$artifacts/zwave_soc_door_lock_keypad_ZGM230S_brd4205b_REGION_EU.hex
-$artifacts/zwave_soc_sensor_pir_ZGM230S_brd4205b_REGION_EU.hex
-$artifacts/zwave_soc_sensor_pir_ZGM230S_brd4205b_REGION_EU.hex
+$artifacts/zwave_ncp_zniffer-brd4205b.hex
+$artifacts/zwave_ncp_serial_api_controller-brd4205b.hex
+$artifacts/zwave_soc_switch_on_off-brd4205b.hex
+$artifacts/zwave_soc_switch_on_off-brd4205b.hex
+$artifacts/zwave_soc_switch_on_off-brd4205b.hex
+$artifacts/zwave_soc_switch_on_off-brd4205b.hex
+$artifacts/zwave_soc_door_lock_keypad-brd4205b.hex
+$artifacts/zwave_soc_door_lock_keypad-brd4205b.hex
+$artifacts/zwave_soc_sensor_pir-brd4205b.hex
+$artifacts/zwave_soc_sensor_pir-brd4205b.hex
 )
 
 DEVICE=(

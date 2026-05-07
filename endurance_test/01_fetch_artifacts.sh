@@ -42,7 +42,7 @@ wget -nc -P "${target_dir}" "${artifacts_url}/conan.lock"
 
 for firmware in "${HEX_1[@]}" "${HEX_2[@]}"; do
   filename=$(basename "${firmware}")
-  wget -nc -P "${target_dir}" "${artifacts_url}/${filename}"
+  wget -nc -P "${target_dir}" "${artifacts_url}/demo-applications.zip!/zwave_sample_app/brd4205b/${filename}"
 done
 
 echo "Artifacts ready in ${target_dir}."
