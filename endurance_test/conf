@@ -1,0 +1,123 @@
+# SPDX-FileCopyrightText: Silicon Laboratories Inc. <https://www.silabs.com/>
+#
+# SPDX-License-Identifier: LicenseRef-MSLA
+
+LOCATION=testbed-1
+
+REGION="0x01"
+
+# artifacts_layout selects how 01_fetch_artifacts.sh interprets artifacts_url:
+#   col    -- Circle of Life pipeline drop in gsdk-generic-development;
+#             URL points at a build folder containing build.xml,
+#             conan.lock, and demo-applications.zip.
+#   z-wave -- Package produced by the Z-Wave pipeline in zwave-conan-dev;
+#             URL points at the package's export/metadata/ folder, which
+#             holds demos/<board>/ (flashables) and debug/<board>/
+#             (symbol ZIPs).
+# The Z-Wave pipeline only publishes REGION_EU builds; the actual radio
+# region is set at flash time via the MFG_ZWAVE_COUNTRY_FREQ token
+# (see REGION below), so EU is the canonical download.
+artifacts_layout="z-wave"
+# artifacts_url="https://<HOST>/artifactory/gsdk-generic-development/sisdk-2025.12/2713"
+artifacts_url="https://<HOST>/artifactory/zwave-conan-dev/silabs/zwave_sample_app/1.1.0-0.dev/task_lamolina_zwave_sdk-1751-endurance-test-8-1-0_test_1/32a78de462fe2285d913b10cdf6036fb6bf8ba33/export/metadata"
+artifacts="artifacts"
+BOARD="brd4205b"
+
+ADDR=(
+jlink-slot-0.example
+jlink-slot-1.example
+jlink-slot-2.example
+jlink-slot-3.example
+jlink-slot-4.example
+jlink-slot-5.example
+jlink-slot-6.example
+jlink-slot-7.example
+jlink-slot-8.example
+jlink-slot-9.example
+)
+
+HEX_1=(
+$artifacts/bootloader-uart-xmodem-zwave-otw_brd4205b.s37
+$artifacts/bootloader-uart-xmodem-zwave-otw_brd4205b.s37
+$artifacts/bootloader-storage-internal-single-zwave-ota_brd4205b.s37
+$artifacts/bootloader-storage-internal-single-zwave-ota_brd4205b.s37
+$artifacts/bootloader-storage-internal-single-zwave-ota_brd4205b.s37
+$artifacts/bootloader-storage-internal-single-zwave-ota_brd4205b.s37
+$artifacts/bootloader-storage-internal-single-zwave-ota_brd4205b.s37
+$artifacts/bootloader-storage-internal-single-zwave-ota_brd4205b.s37
+$artifacts/bootloader-storage-internal-single-zwave-ota_brd4205b.s37
+$artifacts/bootloader-storage-internal-single-zwave-ota_brd4205b.s37
+)
+
+HEX_2=(
+$artifacts/zwave_ncp_zniffer_ZGM230S_brd4205b_REGION_EU.hex
+$artifacts/zwave_ncp_serial_api_controller_ZGM230S_brd4205b_REGION_EU.hex
+$artifacts/zwave_soc_switch_on_off_ZGM230S_brd4205b_REGION_EU.hex
+$artifacts/zwave_soc_switch_on_off_ZGM230S_brd4205b_REGION_EU.hex
+$artifacts/zwave_soc_switch_on_off_ZGM230S_brd4205b_REGION_EU.hex
+$artifacts/zwave_soc_switch_on_off_ZGM230S_brd4205b_REGION_EU.hex
+$artifacts/zwave_soc_door_lock_keypad_ZGM230S_brd4205b_REGION_EU.hex
+$artifacts/zwave_soc_door_lock_keypad_ZGM230S_brd4205b_REGION_EU.hex
+$artifacts/zwave_soc_sensor_pir_ZGM230S_brd4205b_REGION_EU.hex
+$artifacts/zwave_soc_sensor_pir_ZGM230S_brd4205b_REGION_EU.hex
+)
+
+DEVICE=(
+ZGM230S
+ZGM230S
+ZGM230S
+ZGM230S
+ZGM230S
+ZGM230S
+ZGM230S
+ZGM230S
+ZGM230S
+ZGM230S
+)
+
+#(controller) -> switch 1
+#(controller) -> switch 2
+#(controller) -> switch 1 -> switch 2 -> switch 3
+#(controller) -> switch 1 -> switch 2 -> switch 3 -> switch 4
+#(controller) -> switch 1 -> switch 2 -> switch 3 -> switch 4 -> dl1
+#(controller) -> switch 1 -> switch 2 -> switch 3 -> switch 4 -> dl2
+#(controller) -> switch 1 -> switch 2 -> switch 3 -> switch 4 -> pir1
+#(controller) -> switch 1 -> switch 2 -> switch 3 -> switch 4 -> pir2
+
+ROUTE_END_NODE_1="060000000003"
+ROUTE_END_NODE_2="070000000003"
+ROUTE_END_NODE_3="080607000003"
+ROUTE_END_NODE_4="090607080003"
+ROUTE_END_NODE_5="0A0607080903"
+ROUTE_END_NODE_6="0B0607080903"
+ROUTE_END_NODE_7="0C0607080903"
+ROUTE_END_NODE_8="0E0607080903"
+
+NL_WAKE_UP_INTERVAL_VALUE_SEC="000014"
+
+ZGW_HOST=<ZGW_HOST>
+ZGW_USER=pi
+ZGW_STAGE_DIR=/home/$ZGW_USER/zgw-test-bench-stage
+ZGW_REBOOT_WAIT_SEC=60
+
+ZIP_GATEWAY="zipgateway-7.18.03-Linux-armhf.deb"
+LIBZWAVEIP="libzwaveip-7.18.02-Linux-stretch-armhf-Binaries.zip"
+LIBZWAVEIP_DIR="${LIBZWAVEIP%.zip}"
+REFERENCE_CLIENT="${ZGW_STAGE_DIR}/${LIBZWAVEIP_DIR}/reference_client"
+ZipLanGw6="<ZIP_LAN_GW6>"
+ZipPanIp6="<ZIP_PAN_IP6>"
+ZipLanIp6="<ZIP_LAN_IP6>"
+ZipPSK="<ZIP_PSK>"
+ZipSerialAPIPortName="/dev/serial/by-id/usb-Silicon_Labs_J-Link_Pro_OB_lamt-testbed-1-controller_000440155293-if00"
+
+POLL_CMD="identify"
+SUPERVISION="COMMAND_CLASS_SUPERVISION SUPERVISION_GET"
+SWITCH_BINARY_SET_ON="042501FF00"
+SWITCH_BINARY_SET_OFF="0425010000"
+DOOR_LOCK_CONFIGURATION_GET="6205"
+PIR_LOCK_CONFIGURATION_GET="6205"
+
+BURST_SIZE=4
+BURST_SLEEP=32
+
+logs_dir="logs"

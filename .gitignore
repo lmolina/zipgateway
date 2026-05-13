@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: Silicon Laboratories Inc. <https://www.silabs.com/>
+#
+# SPDX-License-Identifier: LicenseRef-MSLA
+
+
 # General part of the gitignore
 *.launch
 *.orig
@@ -15,30 +20,27 @@
 **/sonar-bw/
 **/*.zap~
 
-##Enable these if you are not tracking Simplicity studio project
-# **/.cproject
-# **/.project
-# **/.pdm
-
-#Ignore all build directories
-projects/*/artifact/
-projects/*/build/
-projects/*/*_cmake/build/
-projects/*/cmake_*/build/
-projects/*/GNU ARM v*
-projects/*/IAR ARM*
-
-## Documentation related ignores.
-## Modify them if it is necessary
-*.docx
-*.doc
-*.ppt
-*.pdf
-*.xlsx
-*.xls
-*.html
-
 #code convention tool gitignore
 code-convention-tool/
 **/venv/
 **/.venv/
+
+# Per-run output (logs, captures, intermediate dsks).
+# Input binaries (CI artefacts, ZGW .deb). Tracked: only .gitkeep and README.
+!endurance_test/artifacts/.gitkeep
+!endurance_test/artifacts/README.md
+
+endurance_test/run_*/
+endurance_test/artifacts/*
+endurance_test/.reference_client_history
+
+# Legacy artefact directory (pre-T4 layout). Kept ignored for historical
+# checkouts; new layout uses top-level artifacts/.
+dist/
+
+# input binaries belong in artifacts/, never elsewhere.
+*.deb
+*.s37
+*.hex
+*.zlf
+*.zip

@@ -1,0 +1,5 @@
+Silicon Laboratories proprietary licensing terms apply.
+
+This repository uses SPDX identifier `LicenseRef-MSLA` for files that are
+covered by the applicable Silicon Laboratories software license agreement.
+Refer to your internal MSLA documentation and distribution terms.
