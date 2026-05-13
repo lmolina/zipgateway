@@ -14,3 +14,8 @@ repos:
     rev: v6.2.0
     hooks:
       - id: reuse-lint-file
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+      - id: codespell
