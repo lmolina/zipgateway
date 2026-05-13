@@ -2,27 +2,45 @@
 #
 # SPDX-License-Identifier: LicenseRef-MSLA
 
+
+# General part of the gitignore
+*.launch
+*.orig
+*.bak
+.vscode/
+**/.DS_Store
+**/.idea/
+**/.projectlinkstore
+**/.settings
+**/.makefile
+**/.trash
+**/.uceditor
+**/autogen/*.crc
+**/__pycache__
+**/sonar-bw/
+**/*.zap~
+
+#code convention tool gitignore
+code-convention-tool/
+**/venv/
+**/.venv/
+
+# Per-run output (logs, captures, intermediate dsks).
 # Input binaries (CI artefacts, ZGW .deb). Tracked: only .gitkeep and README.
 !endurance_test/artifacts/.gitkeep
 !endurance_test/artifacts/README.md
+
+endurance_test/run_*/
+endurance_test/artifacts/*
+endurance_test/.reference_client_history
 
 # Legacy artefact directory (pre-T4 layout). Kept ignored for historical
 # checkouts; new layout uses top-level artifacts/.
 dist/
 
-# Per-run output (logs, captures, intermediate dsks).
-endurance_test/run_*/
-endurance_test/artifacts/*
-endurance_test/.reference_client_history
-
-# Safety net: input binaries belong in artifacts/, never elsewhere.
+# input binaries belong in artifacts/, never elsewhere.
 *.deb
 *.s37
 *.hex
 *.zlf
 *.zip
-
-# Editor / OS noise.
-*.swp
-*~
-.DS_Store
