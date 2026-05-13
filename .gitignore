@@ -1,0 +1,44 @@
+# General part of the gitignore
+*.launch
+*.orig
+*.bak
+.vscode/
+**/.DS_Store
+**/.idea/
+**/.projectlinkstore
+**/.settings
+**/.makefile
+**/.trash
+**/.uceditor
+**/autogen/*.crc
+**/__pycache__
+**/sonar-bw/
+**/*.zap~
+
+##Enable these if you are not tracking Simplicity studio project
+# **/.cproject
+# **/.project
+# **/.pdm
+
+#Ignore all build directories
+projects/*/artifact/
+projects/*/build/
+projects/*/*_cmake/build/
+projects/*/cmake_*/build/
+projects/*/GNU ARM v*
+projects/*/IAR ARM*
+
+## Documentation related ignores.
+## Modify them if it is necessary
+*.docx
+*.doc
+*.ppt
+*.pdf
+*.xlsx
+*.xls
+*.html
+
+#code convention tool gitignore
+code-convention-tool/
+**/venv/
+**/.venv/
