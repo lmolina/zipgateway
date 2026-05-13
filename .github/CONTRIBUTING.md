@@ -9,17 +9,26 @@ Refer to the [Git User Guide](https://confluence.silabs.com/spaces/IoTApps/pages
 
 What to consider when raising a Pull Request:
 
-1. **Use conventional commits**
+1. **Use pre-commit**
+    Install [pre-commit](https://pre-commit.com/) and enable it with:
+
+    ```
+    pre-commit install
+    ```
+
+    Once configured, a set of hooks will run on every git commit.
+
+2. **Use conventional commits**
     https://www.conventionalcommits.org/en/v1.0.0/, also when relevant follow https://dep-team.pages.debian.net/deps/dep3/
 
-2. **Pull Request Naming**
+3. **Pull Request Naming**
    By default, GitHub uses the branch name as the pull request title. If the branch naming guideline was followed, no changes are needed here.
 
-3. **Check the Reviewer List**
+4. **Check the Reviewer List**
    GitHub assigns reviewers based on the [CODEOWNERS](CODEOWNERS) file.
    Add more reviewers if needed. Do not remove reviewers from the PR. Ask the repository owner for updates to the code owners.
 
-4. **Evaluate the Action Workflow Results**
+5. **Evaluate the Action Workflow Results**
    The following workflows are included in every repository:
    - **[Coding Convention Check](workflows/00-Check-Code-Convention.yml)**: Analyzes the code formatting and fails if any rules are broken.
    - **[Firmware Build](workflows/02-Build-Firmware.yml)**: Builds the firmware inside the [Dockerfile](../Dockerfile).
