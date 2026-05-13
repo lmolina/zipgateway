@@ -68,7 +68,7 @@ do
 
     # HACK: quick and dirty ;-)
     # CC suppervision uses a 5-bit session id. A hack to fake the session ID. Since the loop goes
-    # until 10, it should be OK to do this, altough there may be problems if the limit of the loop
+    # until 10, it should be OK to do this, although there may be problems if the limit of the loop
     # is increased.
     SESSION="$(printf "%02d" ${i})"
 
