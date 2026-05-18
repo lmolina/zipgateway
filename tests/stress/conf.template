@@ -110,3 +110,18 @@ ST02_RECOVERY_WINDOW_S=60
 #   ST02_MAX_FALSE_DEAD_PER_24H  FAIL if any node exceeds this many
 #                   false-dead events in any 24h window (spec: <= 1).
 ST02_MAX_FALSE_DEAD_PER_24H=1
+
+# ST-03 ZGW operational probe (checks/st03_zgw_probe.sh).
+#   ZIP_PROBE_CADENCE_S    seconds between ZGW liveness probes
+ZIP_PROBE_CADENCE_S=60
+#   ZIP_PROBE_TIMEOUT_S    per-sample resolve timeout in seconds
+ZIP_PROBE_TIMEOUT_S=5
+
+# ST-03 analyzer (checks/st03_analyze.sh).
+# ST03_FATAL_RE: grep -E pattern. From the zipgateway codebase:
+#   "Fatal error"              -- ERR_PRINTF in src/ZIP_Router.c (Router
+#                                 reset failure; posts PROCESS_EVENT_EXIT).
+#   "Assertion failed" / "ASSERT" -- contiki assert()/ASSERT() and
+#                                    SerialAPI ASSERT() failures.
+#   "SIGSEGV" / "core dumped" -- process-abort evidence from the host.
+ST03_FATAL_RE="Fatal error|Assertion failed|ASSERT|SIGSEGV|core dumped"

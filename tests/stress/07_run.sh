@@ -7,13 +7,9 @@
 # 1. Stages run_on_host.sh + utils.sh + conf + bed.tsv on [zgw-host]
 # 2. Detects HomeID once from the ZGW log on [zgw-host]
 # 3. Starts probes locally (checks/),
-# 4. Runs the stress burst loop over SSH with a PTY (so CTRL+C reaches
-#    the worker)
-# 5. Stops the probes, pulls back ${STEP_REMOTE_DIR}/, then analyzes
-#    and writes verdict.txt + summary.json at the run root.
-#
-# The driver's own exit code mirrors the analyzer verdict
-# (0=PASS, 1=FAIL, 2=INCONCLUSIVE) so CI / callers can gate on it.
+# 4. Runs the stress burst loop over SSH
+# 5. Stops the probes, pulls back ${STEP_REMOTE_DIR}/, then runs all
+#    per-test analyzers and writes per-test verdict + summary files
 #
 # Prerequisites on [zgw-host]:
 # - SSH key-based access for ${ZGW_USER}, passwordless sudo
@@ -126,6 +122,16 @@ setsid "${TEST_DIR}/checks/st02_tailer.sh" \
   --settle-s "${ST02_SETTLE_S:-1}" &
 tailer_pid=$!
 
+st03_probe_csv="${STEP_DIR}/st03_zgw_probe.csv"
+st03_probe_pid=""
+echo "Starting ST-03 ZGW probe -> ${st03_probe_csv} ..."
+"${TEST_DIR}/checks/st03_zgw_probe.sh" \
+  --out "${st03_probe_csv}" \
+  --homeid "${homeid}" \
+  --cadence-s "${ZIP_PROBE_CADENCE_S:-30}" \
+  --timeout-s "${ZIP_PROBE_TIMEOUT_S:-5}" &
+st03_probe_pid=$!
+
 wait_pid() {
   local pid="$1"
   local max_s="${2:-8}"
@@ -146,14 +152,19 @@ stop_probes() {
   probes_stopped=1
 
   if [ -n "${heartbeat_pid}" ] && kill -0 "${heartbeat_pid}" 2>/dev/null; then
-    echo "Stopping heartbeat probe (pid ${heartbeat_pid}) ..."
+    echo "Stopping ST-01: heartbeat probe (pid ${heartbeat_pid}) ..."
     kill -TERM "${heartbeat_pid}" 2>/dev/null || true
     wait_pid "${heartbeat_pid}" 5
   fi
   if [ -n "${tailer_pid}" ] && kill -0 "${tailer_pid}" 2>/dev/null; then
-    echo "Stopping false-dead tailer (pid ${tailer_pid}) ..."
+    echo "Stopping ST-02: false-dead tailer (pid ${tailer_pid}) ..."
     kill -TERM -"${tailer_pid}" 2>/dev/null || true
     wait_pid "${tailer_pid}" 5
+  fi
+  if [ -n "${st03_probe_pid}" ] && kill -0 "${st03_probe_pid}" 2>/dev/null; then
+    echo "Stopping ST-03: ZGW probe (pid ${st03_probe_pid}) ..."
+    kill -TERM "${st03_probe_pid}" 2>/dev/null || true
+    wait_pid "${st03_probe_pid}" 5
   fi
 }
 trap stop_probes EXIT
@@ -182,10 +193,17 @@ st02_code=0
 "${TEST_DIR}/checks/st02_analyze.sh" --run-dir "${RUN_DIR}" --conf "${TEST_DIR}/conf" \
   || st02_code=$?
 
+echo "Analyzing run -> ST-03 verdict ..."
+st03_code=0
+"${TEST_DIR}/checks/st03_analyze.sh" --run-dir "${RUN_DIR}" --conf "${TEST_DIR}/conf" \
+  || st03_code=$?
+
 run_code="${st01_code}"
 [ "${st02_code}" -gt "${run_code}" ] && run_code="${st02_code}"
+[ "${st03_code}" -gt "${run_code}" ] && run_code="${st03_code}"
 
 echo "Run complete. Verdict artifacts in ${RUN_DIR}/:"
 echo "  ST-01: verdict.txt, summary.json (exit ${st01_code})"
 echo "  ST-02: st02_verdict.txt, st02_summary.json (exit ${st02_code})"
+echo "  ST-03: st03_verdict.txt, st03_summary.json (exit ${st03_code})"
 exit "${run_code}"

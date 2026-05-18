@@ -22,7 +22,14 @@ source "${mydir}/utils.sh"
 bed_load "${BED_TSV}"
 
 mkdir -p "${STEP_DIR}"
-trap clean_exit SIGINT
+
+# ST-03: capture end PID at both clean_exit call sites (SIGINT + duration).
+st03_clean_exit() {
+  pgrep -x zipgateway | head -n1 > "${STEP_DIR}/st03_pid_end.txt" || true
+  clean_exit
+}
+
+trap st03_clean_exit SIGINT
 trap launch_reference_client SIGCHLD
 
 sudo /etc/init.d/zipgateway stop
@@ -37,6 +44,16 @@ sudo /etc/init.d/zipgateway start
 
 # The zipgateway takes a long time to be fully operational
 sleep 60
+
+# ST-03: record ZGW PID once it is up and before any load. The analyzer
+# compares this against pid_end at run end; any change means the process
+# restarted (FAIL).
+ZGW_PID_START=$(pgrep -x zipgateway | head -n1)
+if [ -z "${ZGW_PID_START}" ]; then
+  echo "Error: zipgateway not running after start" >&2
+  exit 1
+fi
+printf "%s\n" "${ZGW_PID_START}" > "${STEP_DIR}/st03_pid_start.txt"
 
 launch_reference_client
 
@@ -112,4 +129,4 @@ do
 done
 
 echo "TEST_DURATION elapsed; shutting down."
-clean_exit
+st03_clean_exit

@@ -4,9 +4,10 @@
 # Stress test
 
 Burst load against the Z/IP Gateway with verdict checks running
-in parallel. Currently scoped to **ST-01 (NCP tx-queue lockup)** and
-**ST-02 (node false-dead events)**; additional stress tests will reuse
-this directory layout via more files under `checks/`.
+in parallel. Currently scoped to **ST-01 (NCP tx-queue lockup)**,
+**ST-02 (node false-dead events)**, and **ST-03 (ZGW operational)**;
+additional stress tests will reuse this directory layout via more
+files under `checks/`.
 
 See `../../AGENTS.md` for hardware bed, host roles, and conventions.
 
@@ -40,7 +41,7 @@ Important note: create `conf` and `bed.tsv` files, i.e., `cp conf.template
 | `00_init_test_run.sh` | mints `run_<UTC>/` (thin wrapper around `bench/init_test_run.sh`) |
 | `01_..05_*.sh` | Step drivers; each takes `<run_dir>` as `$1` and tees into `<run_dir>/<step>/console.log` |
 | `07_run.sh` | orchestrator + analysis |
-| `run_on_host.sh` | stress burst loop on `[zgw-host]`; reads `RUN_DIR` from env, drives every end-device slot (>=16) each burst |
+| `run_on_host.sh` | stress burst loop on `[zgw-host]` |
 | `conf` | Z/IP Gateway + stress-test parameters (sourced by all scripts; sets `BED_TSV` to the file next to it) |
 | `bed.tsv` | Per-device description for this test |
 | `checks/` | One script per verdict signal (heartbeat probes, log analyzers). See `checks/README.md`. |
