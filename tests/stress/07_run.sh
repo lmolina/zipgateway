@@ -208,15 +208,20 @@ echo "Analyzing run -> ST-04 verdict ..."
 st04_code=0
 "${TEST_DIR}/checks/st04_analyze.sh" --run-dir "${RUN_DIR}" --conf "${TEST_DIR}/conf" \
   || st04_code=$?
-
+echo "Analyzing run -> ST-05 verdict ..."
+st05_code=0
+"${TEST_DIR}/checks/st05_analyze.sh" --run-dir "${RUN_DIR}" --conf "${TEST_DIR}/conf" \
+  || st05_code=$?
 run_code="${st01_code}"
 [ "${st02_code}" -gt "${run_code}" ] && run_code="${st02_code}"
 [ "${st03_code}" -gt "${run_code}" ] && run_code="${st03_code}"
 [ "${st04_code}" -gt "${run_code}" ] && run_code="${st04_code}"
+[ "${st05_code}" -gt "${run_code}" ] && run_code="${st05_code}"
 
 echo "Run complete. Verdict artifacts in ${RUN_DIR}/:"
 echo "  ST-01: verdict.txt, summary.json (exit ${st01_code})"
 echo "  ST-02: st02_verdict.txt, st02_summary.json (exit ${st02_code})"
 echo "  ST-03: st03_verdict.txt, st03_summary.json (exit ${st03_code})"
 echo "  ST-04: st04_verdict.txt, st04_summary.json (exit ${st04_code})"
+echo "  ST-05: st05_verdict.txt, st05_summary.json (exit ${st05_code})"
 exit "${run_code}"

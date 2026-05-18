@@ -4,10 +4,11 @@
 # Stress test
 
 Burst load against the Z/IP Gateway with verdict checks running
-in parallel. Currently scoped to **ST-01 (NCP tx-queue lockup)**,
-**ST-02 (node false-dead events)**, **ST-03 (ZGW operational)**,
-and **ST-04 (ZGW memory / CPU)**; additional stress tests will reuse
-this directory layout via more files under `checks/`.
+in parallel.
+
+ST-03 and ST-05 intentionally share the same ZGW probe. The probe
+records per-sample latency and status once. ST-03 consumes the
+liveness signal while ST-05 consumes the latency signal.
 
 See `../../AGENTS.md` for hardware bed, host roles, and conventions.
 

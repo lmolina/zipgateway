@@ -25,7 +25,8 @@ Checks:
 | `st01_analyze.sh`   | ST-01 | post-run: heartbeat-timeout streak (reliable) + ZGW-log tx-marker gap (corroborating) -> `verdict.txt` + `summary.json` |
 | `st02_tailer.sh`    | ST-02 | live tail of remote ZGW log; on `Node N is now failing`, mDNS resolve `zw<HomeID><NNNN>.local` then ping (default is 30s timeout); CSV row per event |
 | `st02_analyze.sh`   | ST-02 | post-run wrapper: runs `st02_bucket.awk` |
-| `st03_zgw_probe.sh` | ST-03 | mDNS (`avahi-resolve`) liveness probe of the ZGW controller resource. Similar to ST-01. TODO: check if it worth the duplication |
+| `st03_zgw_probe.sh` | ST-03, ST-05 | shared mDNS (`avahi-resolve`) probe of the ZGW controller resource. |
 | `st03_analyze.sh`   | ST-03 | post-run: PID alive/unchanged at run end + every probe row ok + zero fatal-keyword matches in `zipgateway.log` |
 | `st04_process_sampler.sh` | ST-04 | remote process sampler on `[zgw-host]`, sample PID, RSS (KiB), CPU% |
 | `st04_analyze.sh`   | ST-04 | post-run |
+| `st05_analyze.sh`   | ST-05 | post-run: reuse `st03_zgw_probe.csv`; FAIL on any non-ok row or latency above 5 s |
