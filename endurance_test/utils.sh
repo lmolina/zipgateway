@@ -105,3 +105,111 @@ function setup_rail_test {
   echo "freqOverride 916000000" > "${RAIL_TEST_916}"
   sleep 0.1
 }
+
+# -- Bed description helpers ---------------------------------------------------
+#
+# Public surface after bed_load <tsv>:
+#   BED_N                 number of slots
+#   BED_HOST[i]           JLink-IP DNS name
+#   BED_BOARD[i]          Commander --board family (e.g. brd4205b)
+#   BED_DEVICE[i]         Commander --device token (e.g. ZGM230S)
+#   BED_ROLE[i]           zniffer | controller | switch | door_lock | pir
+#   BED_BOOTLOADER[i]     filename under ${artifacts}/
+#   BED_FIRMWARE[i]       filename under ${artifacts}/
+#   BED_ROUTE[i]          PRIORITY_ROUTE_SET hex string ('' when '-')
+#
+# Iterators:
+#   bed_iter_end_devices  prints slot indices whose role is not
+#                         zniffer/controller, one per line.
+#
+# These helpers expect strict mode in the caller (set -euo pipefail).
+# They do not set it here so sourcing utils.sh remains side-effect-free
+# beyond function definitions.
+
+bed_load() {
+  local tsv="$1"
+  if [ ! -f "${tsv}" ]; then
+    echo "bed_load: TSV not found: ${tsv}" >&2
+    return 1
+  fi
+
+  BED_N=0
+  BED_HOST=()
+  BED_BOARD=()
+  BED_DEVICE=()
+  BED_ROLE=()
+  BED_BOOTLOADER=()
+  BED_FIRMWARE=()
+  BED_ROUTE=()
+
+  local header_seen=0
+  local lineno=0
+  local raw
+  while IFS= read -r raw || [ -n "${raw}" ]; do
+    lineno=$((lineno + 1))
+    # Strip CR (in case the file ever picks up CRLF).
+    raw="${raw%$'\r'}"
+    # Skip blank lines and comments.
+    case "${raw}" in
+      ''|\#*) continue ;;
+    esac
+
+    # Split on tabs.
+    local IFS=$'\t'
+    # shellcheck disable=SC2206 # intentional word-splitting on TAB
+    local fields=( ${raw} )
+    unset IFS
+
+    if [ "${#fields[@]}" -ne 8 ]; then
+      echo "bed_load: ${tsv}:${lineno}: expected 8 tab-separated fields, got ${#fields[@]}" >&2
+      return 1
+    fi
+
+    if [ "${header_seen}" -eq 0 ]; then
+      if [ "${fields[0]}" != "slot" ]; then
+        echo "bed_load: ${tsv}:${lineno}: first non-comment row must be the header (got '${fields[0]}')" >&2
+        return 1
+      fi
+      header_seen=1
+      continue
+    fi
+
+    local slot="${fields[0]}"
+    if [ "${slot}" != "${BED_N}" ]; then
+      echo "bed_load: ${tsv}:${lineno}: slot column '${slot}' does not match expected index ${BED_N}" >&2
+      return 1
+    fi
+
+    local route="${fields[7]}"
+    [ "${route}" = "-" ] && route=""
+
+    BED_HOST+=( "${fields[1]}" )
+    BED_BOARD+=( "${fields[2]}" )
+    BED_DEVICE+=( "${fields[3]}" )
+    BED_ROLE+=( "${fields[4]}" )
+    BED_BOOTLOADER+=( "${fields[5]}" )
+    BED_FIRMWARE+=( "${fields[6]}" )
+    BED_ROUTE+=( "${route}" )
+
+    BED_N=$((BED_N + 1))
+  done < "${tsv}"
+
+  if [ "${header_seen}" -eq 0 ]; then
+    echo "bed_load: ${tsv}: no header row found" >&2
+    return 1
+  fi
+  if [ "${BED_N}" -eq 0 ]; then
+    echo "bed_load: ${tsv}: no data rows" >&2
+    return 1
+  fi
+}
+
+bed_iter_end_devices() {
+  local i
+  for ((i = 0; i < BED_N; i++)); do
+    case "${BED_ROLE[i]}" in
+      zniffer|controller) ;;
+      *) echo "${i}" ;;
+    esac
+  done
+}

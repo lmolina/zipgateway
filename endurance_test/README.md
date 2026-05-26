@@ -21,8 +21,9 @@ for hardware bed, host roles, and conventions.
 
 ## Files
 
+- `bed.tsv` -- per-slot bed description (jlink host, board, device, role, bootloader, firmware, route). One row per slot; edit this when you add or change a board. See "Bed description" below.
 - `conf` -- machine + test parameters (sourced by every script).
-- `utils.sh` -- shared functions (sourced).
+- `utils.sh` -- shared functions, including the `bed_load` / `bed_iter_end_devices` helpers that parse `bed.tsv` into `BED_*` arrays.
 - `01_..07_*.sh` -- step scripts above.
 - `zgw_cleanup.sh` -- runs on `[zgw-host]`; invoked by `03_setup_zipgateway.sh` after rsync. Not user-triggered; missing numeric prefix is the signal.
 - `provision_on_host.sh` -- runs on `[zgw-host]`; invoked by `04_provisioning.sh` after rsync. Same convention: no numeric prefix = host worker.
@@ -32,3 +33,20 @@ for hardware bed, host roles, and conventions.
 Steps 3, 4, and 7 prerequisites on `[zgw-host]`: SSH key-based access for `${ZGW_USER}` and passwordless `sudo`. Without those, the driver scripts exit with a precondition error.
 
 Run output (logs, captures, intermediate `dsks`) is gitignored.
+
+## Bed description
+
+`bed.tsv` is one tab-separated row per slot. Lines starting with `#` and blank lines are ignored. Columns (in order):
+
+| Column | Meaning |
+|---|---|
+| `slot` | Zero-based slot index; must match the file order. |
+| `jlink_host` | JLink-IP DNS name (port 4902 control). |
+| `board` | Commander `--board` family (e.g. `brd4205b`). |
+| `device` | Commander `--device` token (e.g. `ZGM230S`). |
+| `role` | `zniffer`, `controller`, `switch`, `door_lock`, or `pir`. |
+| `bootloader` | Filename under `${artifacts}/`. |
+| `firmware` | Filename under `${artifacts}/`. |
+| `route` | `PRIORITY_ROUTE_SET` hex string; `-` for zniffer/controller. |
+
+To add a board: append a row with the next `slot` number; `01_fetch_artifacts.sh` will pull the new firmware (one fetch loop per distinct `board`) and `02_prepare_boards.sh` will flash it next run.

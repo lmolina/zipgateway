@@ -52,6 +52,7 @@ ssh "${ssh_opts[@]}" "${ssh_target}" "mkdir -p '${ZGW_STAGE_DIR}'"
 rsync -a \
   "${script_folder}/run_on_host.sh" \
   "${script_folder}/utils.sh" \
+  "${script_folder}/bed.tsv" \
   "${script_folder}/conf" \
   "${ssh_target}:${ZGW_STAGE_DIR}/"
 

@@ -67,12 +67,16 @@ The full 9-step walkthrough lives in `endurance_test/README.md`.
 
 `endurance_test/conf` is sourced by every script. It mixes:
 
-- machine-specific facts: board JLink-IP addresses, zgw-host hostname,
-  ZGW PSK, region, ZGW install path.
-- test parameters: `BURST_SIZE`, burst sleep, wake-up interval, route
-  plan per end device, command-class hex strings.
+- machine-specific facts: zgw-host hostname, ZGW PSK, region, ZGW
+  install path.
+- test parameters: `BURST_SIZE`, burst sleep, wake-up interval,
+  command-class hex strings.
 
-Splitting machine vs test config is a backlog item (see personal PLAN).
+Per-slot bed description (JLink-IP, board, device, role, bootloader,
+firmware, route) lives in `endurance_test/bed.tsv` and is
+loaded by `bed_load` in `endurance_test/utils.sh`. Splitting the rest
+of `conf` into machine vs test config is a backlog item (see personal
+PLAN).
 
 ## Artefacts
 

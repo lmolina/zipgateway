@@ -1,0 +1,38 @@
+# SPDX-FileCopyrightText: Silicon Laboratories Inc. <https://www.silabs.com/>
+# SPDX-License-Identifier: LicenseRef-MSLA
+#
+# Bed description for the endurance test. One row per slot.
+# Tab-separated. Lines starting with '#' and blank lines are ignored.
+# Loaded by utils.sh:bed_load and consumed by the 01/02/04/07 step scripts.
+#
+# Columns:
+#   slot         zero-based slot index (matches dut_$i during flashing)
+#   jlink_host   JLink-IP DNS name (port 4902 control, 5901 SWD)
+#   board        Commander --board family (e.g. brd4205b, brd4401c)
+#   device       Commander --device token (e.g. ZGM230S)
+#   role         zniffer | controller | switch | door_lock | pir
+#   bootloader   filename under ${artifacts}/
+#   firmware     filename under ${artifacts}/
+#   route        PRIORITY_ROUTE_SET hex string; '-' for zniffer/controller
+#
+# Topology of the routes below (testbed-1):
+#   (controller) -> switch 1
+#   (controller) -> switch 2
+#   (controller) -> switch 1 -> switch 2 -> switch 3
+#   (controller) -> switch 1 -> switch 2 -> switch 3 -> switch 4
+#   (controller) -> switch 1 -> switch 2 -> switch 3 -> switch 4 -> dl1
+#   (controller) -> switch 1 -> switch 2 -> switch 3 -> switch 4 -> dl2
+#   (controller) -> switch 1 -> switch 2 -> switch 3 -> switch 4 -> pir1
+#   (controller) -> switch 1 -> switch 2 -> switch 3 -> switch 4 -> pir2
+#
+slot	jlink_host	board	device	role	bootloader	firmware	route
+0	jlink-slot-0.example	brd4205b	ZGM230S	zniffer	bootloader-uart-xmodem-zwave-otw_brd4205b.s37	zwave_ncp_zniffer_ZGM230S_brd4205b_REGION_EU.hex	-
+1	jlink-slot-1.example	brd4205b	ZGM230S	controller	bootloader-uart-xmodem-zwave-otw_brd4205b.s37	zwave_ncp_serial_api_controller_ZGM230S_brd4205b_REGION_EU.hex	-
+2	jlink-slot-2.example	brd4205b	ZGM230S	switch	bootloader-storage-internal-single-zwave-ota_brd4205b.s37	zwave_soc_switch_on_off_ZGM230S_brd4205b_REGION_EU.hex	060000000003
+3	jlink-slot-3.example	brd4205b	ZGM230S	switch	bootloader-storage-internal-single-zwave-ota_brd4205b.s37	zwave_soc_switch_on_off_ZGM230S_brd4205b_REGION_EU.hex	070000000003
+4	jlink-slot-4.example	brd4205b	ZGM230S	switch	bootloader-storage-internal-single-zwave-ota_brd4205b.s37	zwave_soc_switch_on_off_ZGM230S_brd4205b_REGION_EU.hex	080607000003
+5	jlink-slot-5.example	brd4205b	ZGM230S	switch	bootloader-storage-internal-single-zwave-ota_brd4205b.s37	zwave_soc_switch_on_off_ZGM230S_brd4205b_REGION_EU.hex	090607080003
+6	jlink-slot-6.example	brd4205b	ZGM230S	door_lock	bootloader-storage-internal-single-zwave-ota_brd4205b.s37	zwave_soc_door_lock_keypad_ZGM230S_brd4205b_REGION_EU.hex	0A0607080903
+7	jlink-slot-7.example	brd4205b	ZGM230S	door_lock	bootloader-storage-internal-single-zwave-ota_brd4205b.s37	zwave_soc_door_lock_keypad_ZGM230S_brd4205b_REGION_EU.hex	0B0607080903
+8	jlink-slot-8.example	brd4205b	ZGM230S	pir	bootloader-storage-internal-single-zwave-ota_brd4205b.s37	zwave_soc_sensor_pir_ZGM230S_brd4205b_REGION_EU.hex	0C0607080903
+9	jlink-slot-9.example	brd4205b	ZGM230S	pir	bootloader-storage-internal-single-zwave-ota_brd4205b.s37	zwave_soc_sensor_pir_ZGM230S_brd4205b_REGION_EU.hex	0E0607080903

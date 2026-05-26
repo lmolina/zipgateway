@@ -11,11 +11,20 @@ if [ ! -f "${script_folder}/conf" ]; then
   echo "Error: conf file not found in ${script_folder}" >&2
   exit 1
 fi
+if [ ! -f "${script_folder}/utils.sh" ]; then
+  echo "Error: utils.sh not found in ${script_folder}" >&2
+  exit 1
+fi
 
 source "${script_folder}/conf"
+source "${script_folder}/utils.sh"
 
 if [ -z "${artifacts:-}" ]; then
   echo "Error: artifacts variable is not set in conf." >&2
+  exit 1
+fi
+if [ -z "${BED_TSV:-}" ]; then
+  echo "Error: BED_TSV variable is not set in conf." >&2
   exit 1
 fi
 
@@ -41,15 +50,37 @@ fi
 # pipeline) or "z-wave" (zwave-conan-dev / Z-Wave pipeline)
 layout="${artifacts_layout:-col}"
 
-if [ -z "${BOARD:-}" ]; then
-  echo "Error: BOARD must be set in conf." >&2
-  exit 1
-fi
+bed_load "${BED_TSV}"
 
-unique_basenames() {
-  local p
-  for p in "$@"; do
-    basename "${p}"
+# Distinct board families across the bed (one fetch loop per board).
+bed_boards() {
+  local i
+  for ((i = 0; i < BED_N; i++)); do
+    echo "${BED_BOARD[i]}"
+  done | sort -u
+}
+
+# Firmware basenames belonging to a given board.
+bed_firmware_for_board() {
+  local want="$1"
+  local i
+  for ((i = 0; i < BED_N; i++)); do
+    if [ "${BED_BOARD[i]}" = "${want}" ]; then
+      echo "${BED_BOOTLOADER[i]}"
+      echo "${BED_FIRMWARE[i]}"
+    fi
+  done | sort -u
+}
+
+# Application firmware basenames (excluding bootloaders) belonging to a
+# given board. Used for the symbol-bundle fetch in the z-wave layout.
+bed_app_firmware_for_board() {
+  local want="$1"
+  local i
+  for ((i = 0; i < BED_N; i++)); do
+    if [ "${BED_BOARD[i]}" = "${want}" ]; then
+      echo "${BED_FIRMWARE[i]}"
+    fi
   done | sort -u
 }
 
@@ -57,11 +88,13 @@ fetch_col() {
   wget -nc -P "${target_dir}" "${artifacts_url}/build.xml"
   wget -nc -P "${target_dir}" "${artifacts_url}/conan.lock"
 
-  local name
-  while IFS= read -r name; do
-    wget -nc -P "${target_dir}" \
-      "${artifacts_url}/demo-applications.zip!/zwave_sample_app/${BOARD}/${name}"
-  done < <(unique_basenames "${HEX_1[@]}" "${HEX_2[@]}")
+  local board name
+  while IFS= read -r board; do
+    while IFS= read -r name; do
+      wget -nc -P "${target_dir}" \
+        "${artifacts_url}/demo-applications.zip!/zwave_sample_app/${board}/${name}"
+    done < <(bed_firmware_for_board "${board}")
+  done < <(bed_boards)
 }
 
 fetch_z_wave() {
@@ -74,18 +107,19 @@ fetch_z_wave() {
       || echo "Note: could not fetch ${meta}; skipping." >&2
   done
 
-  local name
-  while IFS= read -r name; do
-    wget -nc -P "${target_dir}" "${artifacts_url}/demos/${BOARD}/${name}"
-  done < <(unique_basenames "${HEX_1[@]}" "${HEX_2[@]}")
+  local board name app_name
+  while IFS= read -r board; do
+    while IFS= read -r name; do
+      wget -nc -P "${target_dir}" "${artifacts_url}/demos/${board}/${name}"
+    done < <(bed_firmware_for_board "${board}")
 
-  # Symbol bundles live only under debug/<board>/<app>.zip
-  local app_name
-  while IFS= read -r app_name; do
-    wget -nc -P "${debug_dir}" \
-      "${artifacts_url}/debug/${BOARD}/${app_name%.hex}.zip" \
-      || echo "Note: could not fetch ${app_name%.hex}.zip; skipping." >&2
-  done < <(unique_basenames "${HEX_2[@]}")
+    # Symbol bundles live only under debug/<board>/<app>.zip
+    while IFS= read -r app_name; do
+      wget -nc -P "${debug_dir}" \
+        "${artifacts_url}/debug/${board}/${app_name%.hex}.zip" \
+        || echo "Note: could not fetch ${app_name%.hex}.zip; skipping." >&2
+    done < <(bed_app_firmware_for_board "${board}")
+  done < <(bed_boards)
 }
 
 case "${layout}" in
