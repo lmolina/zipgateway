@@ -67,13 +67,13 @@ The full 9-step walkthrough lives in `endurance_test/README.md`.
 
 `endurance_test/conf` is sourced by every script. It mixes:
 
-- machine-specific facts: zgw-host hostname, ZGW PSK, region, ZGW
-  install path.
+- machine-specific facts: zgw-host hostname, ZGW PSK, REGION (default
+  RF region used by the gateway and as bed.tsv fallback), ZGW install path.
 - test parameters: `BURST_SIZE`, burst sleep, wake-up interval,
   command-class hex strings.
 
 Per-slot bed description (JLink-IP, board, device, role, bootloader,
-firmware, route) lives in `endurance_test/bed.tsv` and is
+firmware, route, region) lives in `endurance_test/bed.tsv` and is
 loaded by `bed_load` in `endurance_test/utils.sh`. Bootloader and
 firmware columns hold full Artifactory URLs; `01_fetch_artifacts.sh`
 wgets each unique URL into `artifacts/` mirroring the path after

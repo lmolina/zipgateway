@@ -117,6 +117,7 @@ function setup_rail_test {
 #   BED_BOOTLOADER[i]     Artifactory URL ('' when '-')
 #   BED_FIRMWARE[i]       Artifactory URL
 #   BED_ROUTE[i]          PRIORITY_ROUTE_SET hex string ('' when '-')
+#   BED_REGION[i]         MFG_ZWAVE_COUNTRY_FREQ hex ('' when '-')
 #
 # Iterators:
 #   bed_iter_end_devices  prints slot indices whose role is not
@@ -141,6 +142,7 @@ bed_load() {
   BED_BOOTLOADER=()
   BED_FIRMWARE=()
   BED_ROUTE=()
+  BED_REGION=()
 
   local header_seen=0
   local lineno=0
@@ -160,8 +162,8 @@ bed_load() {
     local fields=( ${raw} )
     unset IFS
 
-    if [ "${#fields[@]}" -ne 8 ]; then
-      echo "bed_load: ${tsv}:${lineno}: expected 8 tab-separated fields, got ${#fields[@]}" >&2
+    if [ "${#fields[@]}" -ne 9 ]; then
+      echo "bed_load: ${tsv}:${lineno}: expected 9 tab-separated fields, got ${#fields[@]}" >&2
       return 1
     fi
 
@@ -206,6 +208,18 @@ bed_load() {
     local route="${fields[7]}"
     [ "${route}" = "-" ] && route=""
 
+    local region="${fields[8]}"
+    [ "${region}" = "-" ] && region=""
+    if [ -n "${region}" ]; then
+      case "${region}" in
+        0x[0-9A-Fa-f]*) ;;
+        *)
+          echo "bed_load: ${tsv}:${lineno}: region must be hex 0x.. or '-' (got '${fields[8]}')" >&2
+          return 1
+          ;;
+      esac
+    fi
+
     BED_HOST+=( "${fields[1]}" )
     BED_BOARD+=( "${fields[2]}" )
     BED_DEVICE+=( "${fields[3]}" )
@@ -213,6 +227,7 @@ bed_load() {
     BED_BOOTLOADER+=( "${bootloader}" )
     BED_FIRMWARE+=( "${fields[6]}" )
     BED_ROUTE+=( "${route}" )
+    BED_REGION+=( "${region}" )
 
     BED_N=$((BED_N + 1))
   done < "${tsv}"

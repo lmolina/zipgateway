@@ -96,7 +96,8 @@ for ((i = 0; i < BED_N; i++)); do
   fi
   commander flash "${firmware}" --device "${device}" --ip "$addr"
   sleep 0.5
-  commander flash --tokengroup znet --token MFG_ZWAVE_COUNTRY_FREQ:$REGION --device "${device}" --ip "$addr"
+  region="${BED_REGION[i]:-${REGION}}"
+  commander flash --tokengroup znet --token MFG_ZWAVE_COUNTRY_FREQ:${region} --device "${device}" --ip "$addr"
   sleep 1
 
   dsk=$(commander --apack device zwave-qrcode --timeout 2000 --tif swd --device "${device}" --ip "$addr")

@@ -4,9 +4,10 @@
 
 LOCATION=testbed-1
 
+# RF region default. Used by zgw_cleanup.sh for ZWRFRegion= and as the
+# fallback for bed.tsv rows whose region column is '-'.
 REGION="0x01"
 
-# Radio region is set at flash time via MFG_ZWAVE_COUNTRY_FREQ (see REGION).
 # Firmware URLs live in bed.tsv; 01_fetch_artifacts.sh downloads them
 # into ${artifacts}/ mirroring the Artifactory path after /artifactory/.
 artifacts="artifacts"

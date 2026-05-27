@@ -21,7 +21,7 @@ for hardware bed, host roles, and conventions.
 
 ## Files
 
-- `bed.tsv` -- per-slot bed description (jlink host, board, device, role, bootloader, firmware, route). One row per slot; edit this when you add or change a board. See "Bed description" below.
+- `bed.tsv` -- per-slot bed description (jlink host, board, device, role, bootloader, firmware, route, region). One row per slot; edit this when you add or change a board. See "Bed description" below.
 - `conf` -- machine + test parameters (sourced by every script).
 - `utils.sh` -- shared functions, including the `bed_load` / `bed_iter_end_devices` helpers that parse `bed.tsv` into `BED_*` arrays.
 - `01_..07_*.sh` -- step scripts above.
@@ -48,5 +48,6 @@ Run output (logs, captures, intermediate `dsks`) is gitignored.
 | `bootloader` | Full Artifactory URL; `-` if no separate bootloader. |
 | `firmware` | Full Artifactory URL (`zip!/member` syntax supported by wget). |
 | `route` | `PRIORITY_ROUTE_SET` hex string; `-` for zniffer/controller. |
+| `region` | `MFG_ZWAVE_COUNTRY_FREQ` hex (e.g. `0x01` US, `0x00` EU, `0x09` US-LR); `-` to inherit `REGION` from `conf`. Flashed at step 2. |
 
 To add a board: append a row with the next `slot` number; `01_fetch_artifacts.sh` will wget any new URL and `02_prepare_boards.sh` will flash it on the next run.

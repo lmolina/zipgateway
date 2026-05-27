@@ -14,6 +14,7 @@
 #   bootloader   full Artifactory URL; '-' if no separate bootloader
 #   firmware     full Artifactory URL (wget zip!/member syntax supported)
 #   route        PRIORITY_ROUTE_SET hex string; '-' for zniffer/controller
+#   region       MFG_ZWAVE_COUNTRY_FREQ hex (e.g. 0x01=US, 0x00=EU, 0x09=US-LR); '-' for REGION from conf
 #
 # Downloaded files mirror the path after /artifactory/ under ${artifacts}/.
 #
@@ -27,14 +28,14 @@
 #   (controller) -> switch 1 -> switch 2 -> switch 3 -> switch 4 -> pir1
 #   (controller) -> switch 1 -> switch 2 -> switch 3 -> switch 4 -> pir2
 #
-slot	jlink_host	board	device	role	bootloader	firmware	route
-0	jlink-slot-0.example	brd4205b	ZGM230S	zniffer	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-uart-xmodem-zwave-otw-brd4205b.s37	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_ncp_zniffer-brd4205b.hex	-
-1	jlink-slot-1.example	brd4205b	ZGM230S	controller	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-uart-xmodem-zwave-otw-brd4205b.s37	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_ncp_serial_api_controller-brd4205b.hex	-
-2	jlink-slot-2.example	brd4205b	ZGM230S	switch	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-storage-internal-single-zwave-ota-brd4205b.s37	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_soc_switch_on_off-brd4205b.hex	-
-3	jlink-slot-3.example	brd4205b	ZGM230S	switch	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-storage-internal-single-zwave-ota-brd4205b.s37	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_soc_switch_on_off-brd4205b.hex	-
-4	jlink-slot-4.example	brd4205b	ZGM230S	switch	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-storage-internal-single-zwave-ota-brd4205b.s37	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_soc_switch_on_off-brd4205b.hex	-
-5	jlink-slot-5.example	brd4205b	ZGM230S	switch	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-storage-internal-single-zwave-ota-brd4205b.s37	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_soc_switch_on_off-brd4205b.hex	-
-6	jlink-slot-6.example	brd4205b	ZGM230S	door_lock	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-storage-internal-single-zwave-ota-brd4205b.s37	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_soc_door_lock_keypad-brd4205b.hex	-
-7	jlink-slot-7.example	brd4205b	ZGM230S	door_lock	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-storage-internal-single-zwave-ota-brd4205b.s37	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_soc_door_lock_keypad-brd4205b.hex	-
-8	jlink-slot-8.example	brd4205b	ZGM230S	pir	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-storage-internal-single-zwave-ota-brd4205b.s37	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_soc_sensor_pir-brd4205b.hex	-
-9	jlink-slot-9.example	brd4205b	ZGM230S	pir	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-storage-internal-single-zwave-ota-brd4205b.s37	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_soc_sensor_pir-brd4205b.hex	-
+slot	jlink_host	board	device	role	bootloader	firmware	route	region
+0	jlink-slot-0.example	brd4205b	ZGM230S	zniffer	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-uart-xmodem-zwave-otw-brd4205b.s37	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_ncp_zniffer-brd4205b.hex	-	0x01
+1	jlink-slot-1.example	brd4205b	ZGM230S	controller	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-uart-xmodem-zwave-otw-brd4205b.s37	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_ncp_serial_api_controller-brd4205b.hex	-	0x01
+2	jlink-slot-2.example	brd4205b	ZGM230S	switch	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-storage-internal-single-zwave-ota-brd4205b.s37	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_soc_switch_on_off-brd4205b.hex	-	0x01
+3	jlink-slot-3.example	brd4205b	ZGM230S	switch	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-storage-internal-single-zwave-ota-brd4205b.s37	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_soc_switch_on_off-brd4205b.hex	-	0x01
+4	jlink-slot-4.example	brd4205b	ZGM230S	switch	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-storage-internal-single-zwave-ota-brd4205b.s37	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_soc_switch_on_off-brd4205b.hex	-	0x01
+5	jlink-slot-5.example	brd4205b	ZGM230S	switch	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-storage-internal-single-zwave-ota-brd4205b.s37	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_soc_switch_on_off-brd4205b.hex	-	0x01
+6	jlink-slot-6.example	brd4205b	ZGM230S	door_lock	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-storage-internal-single-zwave-ota-brd4205b.s37	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_soc_door_lock_keypad-brd4205b.hex	-	0x01
+7	jlink-slot-7.example	brd4205b	ZGM230S	door_lock	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-storage-internal-single-zwave-ota-brd4205b.s37	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_soc_door_lock_keypad-brd4205b.hex	-	0x01
+8	jlink-slot-8.example	brd4205b	ZGM230S	pir	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-storage-internal-single-zwave-ota-brd4205b.s37	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_soc_sensor_pir-brd4205b.hex	-	0x01
+9	jlink-slot-9.example	brd4205b	ZGM230S	pir	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-storage-internal-single-zwave-ota-brd4205b.s37	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_soc_sensor_pir-brd4205b.hex	-	0x01
