@@ -16,8 +16,8 @@ for hardware bed, host roles, and conventions.
 | 4 | `[test-controller]` | `./04_provisioning.sh` (rsyncs `provision_on_host.sh` + `utils.sh` + `conf` + `${artifacts}/dsks` to `[zgw-host]`, runs the worker over SSH, pulls `${logs_dir}/` back) |
 | 5 | manual              | power on devices one-by-one in node-id order, waiting for the inclusion to complete |
 | 6 | `[zgw-host]`        | verify node IDs in `reference_client` (`pl_list`, `list`)                         |
-| 7 | `[test-controller]` | `./07_run.sh` (rsyncs `run_on_host.sh` + `utils.sh` + `conf` to `[zgw-host]`, runs test over SSH, pulls logs back) |
-| 8 | manual              | monitor logs; CTRL+C on `[test-controller]` propagates to the `[zgw-host]` |
+| 7 | `[test-controller]` | `./07_run.sh` (rsyncs `run_on_host.sh` + `utils.sh` + `conf` to `[zgw-host]`, runs test over SSH, pulls logs back). Stops on its own after `TEST_DURATION` (default `72h` in `conf`). |
+| 8 | manual              | monitor logs; CTRL+C on `[test-controller]` propagates to the `[zgw-host]` for an early stop |
 
 ## Files
 

@@ -22,13 +22,19 @@ if [ ! -f "${script_folder}/conf" ]; then
 fi
 source "${script_folder}/conf"
 
-vars=(ZGW_HOST ZGW_USER ZGW_STAGE_DIR LOCATION logs_dir REFERENCE_CLIENT)
+vars=(ZGW_HOST ZGW_USER ZGW_STAGE_DIR LOCATION logs_dir REFERENCE_CLIENT TEST_DURATION)
 for v in "${vars[@]}"; do
   if [ -z "${!v:-}" ]; then
     echo "Error: required variable ${v} not set in conf." >&2
     exit 1
   fi
 done
+
+if ! date -d "now + ${TEST_DURATION}" +%s >/dev/null 2>&1; then
+  echo "Error: TEST_DURATION='${TEST_DURATION}' is not a valid duration." >&2
+  echo "       expected a GNU date 'now + ...' expression (e.g. 72h, 30m)." >&2
+  exit 1
+fi
 
 ssh_target="${ZGW_USER}@${ZGW_HOST}"
 ssh_opts=(-o BatchMode=yes -o ConnectTimeout=5)

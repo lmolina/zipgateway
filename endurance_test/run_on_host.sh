@@ -63,7 +63,10 @@ sleep 0.2
 echo "send \"${CONTROLLER}\" COMMAND_CLASS_NETWORK_MANAGEMENT_INSTALLATION_MAINTENANCE PRIORITY_ROUTE_SET ${BED_ROUTE[7]}" >&3
 sleep 0.2
 
-while true
+END_TIME=$(date -d "now + ${TEST_DURATION}" +%s)
+echo "Test will run until $(date -d "@${END_TIME}") (TEST_DURATION=${TEST_DURATION})"
+
+while [ "$(date +%s)" -lt "${END_TIME}" ]
 do
   for ((i=0; i<BURST_SIZE; i++))
   do
@@ -111,3 +114,6 @@ do
   echo ""
   sleep ${BURST_SLEEP}
 done
+
+echo "TEST_DURATION elapsed; shutting down."
+clean_exit
