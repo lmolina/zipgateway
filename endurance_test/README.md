@@ -46,7 +46,7 @@ Run output (logs, captures, intermediate `dsks`) is gitignored.
 | `device` | Commander `--device` token (e.g. `ZGM230S`). |
 | `role` | `zniffer`, `controller`, `switch`, `door_lock`, or `pir`. |
 | `route` | `PRIORITY_ROUTE_SET` hex string; `-` for zniffer/controller. |
-| `region` | `MFG_ZWAVE_COUNTRY_FREQ` hex (e.g. `0x01` US, `0x00` EU, `0x09` US-LR); `-` to inherit `REGION` from `conf`. Flashed at step 2. |
+| `region` | `MFG_ZWAVE_COUNTRY_FREQ` hex (e.g. `0x01` US, `0x09` US-LR); `-` to inherit `REGION` from `conf`. |
 | `firmware` | Full Artifactory URL (`zip!/member` syntax supported by wget). |
 | `bootloader` | Full Artifactory URL; `-` if no separate bootloader. |
 
