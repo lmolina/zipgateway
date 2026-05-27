@@ -10,7 +10,7 @@ for hardware bed, host roles, and conventions.
 
 | # | Where               | Action                                                                            |
 |---|---------------------|-----------------------------------------------------------------------------------|
-| 1 | `[test-controller]` | `./01_fetch_artifacts.sh` (no-op when `artifacts_url` is unused; place files in `../artifacts/`) |
+| 1 | `[test-controller]` | `./01_fetch_artifacts.sh` (wget each URL from `bed.tsv` into `../artifacts/`) |
 | 2 | `[test-controller]` | `./02_prepare_boards.sh` (flashes boards, writes `dsks`, powers off)              |
 | 3 | `[test-controller]` | `./03_setup_zipgateway.sh` (rsyncs `zipgateway-*.deb` + `zgw_cleanup.sh` to `[zgw-host]`, runs cleanup + reinstall over SSH, reboots, waits up to `ZGW_REBOOT_WAIT_SEC` for SSH to come back) |
 | 4 | `[test-controller]` | `./04_provisioning.sh` (rsyncs `provision_on_host.sh` + `utils.sh` + `conf` + `${artifacts}/dsks` to `[zgw-host]`, runs the worker over SSH, pulls `${logs_dir}/` back) |
@@ -45,8 +45,8 @@ Run output (logs, captures, intermediate `dsks`) is gitignored.
 | `board` | Commander `--board` family (e.g. `brd4205b`). |
 | `device` | Commander `--device` token (e.g. `ZGM230S`). |
 | `role` | `zniffer`, `controller`, `switch`, `door_lock`, or `pir`. |
-| `bootloader` | Filename under `${artifacts}/`; `-` if the firmware ships without a separate bootloader. |
-| `firmware` | Filename under `${artifacts}/`. |
+| `bootloader` | Full Artifactory URL; `-` if no separate bootloader. |
+| `firmware` | Full Artifactory URL (`zip!/member` syntax supported by wget). |
 | `route` | `PRIORITY_ROUTE_SET` hex string; `-` for zniffer/controller. |
 
-To add a board: append a row with the next `slot` number; `01_fetch_artifacts.sh` will pull the new firmware (one fetch loop per distinct `board`) and `02_prepare_boards.sh` will flash it next run.
+To add a board: append a row with the next `slot` number; `01_fetch_artifacts.sh` will wget any new URL and `02_prepare_boards.sh` will flash it on the next run.

@@ -58,13 +58,17 @@ done
 
 bed_load "${BED_TSV}"
 
+artifacts_root="${script_folder}/${artifacts}"
+
 for ((i = 0; i < BED_N; i++)); do
-  firmwares=("${BED_FIRMWARE[i]}")
-  [ -n "${BED_BOOTLOADER[i]}" ] && firmwares=("${BED_BOOTLOADER[i]}" "${firmwares[@]}")
-  for firmware in "${firmwares[@]}"; do
-    if [ ! -f "${script_folder}/${artifacts}/${firmware}" ]; then
-      echo "Error: Missing firmware artifact: ${script_folder}/${artifacts}/${firmware}" >&2
-      echo "Run ./endurance_test/01_fetch_artifacts.sh or place artifacts manually under ${script_folder}/${artifacts}" >&2
+  artifact_urls=()
+  [ -n "${BED_BOOTLOADER[i]}" ] && artifact_urls+=("${BED_BOOTLOADER[i]}")
+  artifact_urls+=("${BED_FIRMWARE[i]}")
+  for url in "${artifact_urls[@]}"; do
+    local_path=$(bed_artifact_local_path "${artifacts_root}" "${url}")
+    if [ ! -f "${local_path}" ]; then
+      echo "Error: Missing firmware artifact: ${local_path}" >&2
+      echo "Run ./endurance_test/01_fetch_artifacts.sh or place the file manually." >&2
       exit 1
     fi
   done
@@ -81,12 +85,12 @@ for ((i = 0; i < BED_N; i++)); do
 
   addr="${BED_HOST[i]}"
   device="${BED_DEVICE[i]}"
-  firmware="${script_folder}/${artifacts}/${BED_FIRMWARE[i]}"
+  firmware=$(bed_artifact_local_path "${artifacts_root}" "${BED_FIRMWARE[i]}")
 
   commander device info --device "${device}" --ip "$addr"
   sleep 0.5
   if [ -n "${BED_BOOTLOADER[i]}" ]; then
-    bootloader="${script_folder}/${artifacts}/${BED_BOOTLOADER[i]}"
+    bootloader=$(bed_artifact_local_path "${artifacts_root}" "${BED_BOOTLOADER[i]}")
     commander flash "${bootloader}" --device "${device}" --ip "$addr"
     sleep 0.5
   fi

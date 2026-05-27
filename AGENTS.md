@@ -74,9 +74,11 @@ The full 9-step walkthrough lives in `endurance_test/README.md`.
 
 Per-slot bed description (JLink-IP, board, device, role, bootloader,
 firmware, route) lives in `endurance_test/bed.tsv` and is
-loaded by `bed_load` in `endurance_test/utils.sh`. Splitting the rest
-of `conf` into machine vs test config is a backlog item (see personal
-PLAN).
+loaded by `bed_load` in `endurance_test/utils.sh`. Bootloader and
+firmware columns hold full Artifactory URLs; `01_fetch_artifacts.sh`
+wgets each unique URL into `artifacts/` mirroring the path after
+`/artifactory/`. Splitting the rest of `conf` into machine vs test
+config is a backlog item (see personal PLAN).
 
 ## Artefacts
 

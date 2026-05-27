@@ -6,20 +6,9 @@ LOCATION=testbed-1
 
 REGION="0x01"
 
-# artifacts_layout selects how 01_fetch_artifacts.sh interprets artifacts_url:
-#   col    -- Circle of Life pipeline drop in gsdk-generic-development;
-#             URL points at a build folder containing build.xml,
-#             conan.lock, and demo-applications.zip.
-#   z-wave -- Package produced by the Z-Wave pipeline in zwave-conan-dev;
-#             URL points at the package's export/metadata/ folder, which
-#             holds demos/<board>/ (flashables) and debug/<board>/
-#             (symbol ZIPs).
-# The Z-Wave pipeline only publishes REGION_EU builds; the actual radio
-# region is set at flash time via the MFG_ZWAVE_COUNTRY_FREQ token
-# (see REGION below), so EU is the canonical download.
-artifacts_layout="z-wave"
-# artifacts_url="https://<HOST>/artifactory/gsdk-generic-development/sisdk-2025.12/2713"
-artifacts_url="https://<HOST>/artifactory/zwave-conan-dev/silabs/zwave_sample_app/1.1.0-0.dev/task_lamolina_zwave_sdk-1751-endurance-test-8-1-0_test_1/32a78de462fe2285d913b10cdf6036fb6bf8ba33/export/metadata"
+# Radio region is set at flash time via MFG_ZWAVE_COUNTRY_FREQ (see REGION).
+# Firmware URLs live in bed.tsv; 01_fetch_artifacts.sh downloads them
+# into ${artifacts}/ mirroring the Artifactory path after /artifactory/.
 artifacts="artifacts"
 
 # Per-slot bed description (board, device, role, firmware, route, ...).

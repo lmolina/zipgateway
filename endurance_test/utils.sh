@@ -114,8 +114,8 @@ function setup_rail_test {
 #   BED_BOARD[i]          Commander --board family (e.g. brd4205b)
 #   BED_DEVICE[i]         Commander --device token (e.g. ZGM230S)
 #   BED_ROLE[i]           zniffer | controller | switch | door_lock | pir
-#   BED_BOOTLOADER[i]     filename under ${artifacts}/ ('' when '-')
-#   BED_FIRMWARE[i]       filename under ${artifacts}/
+#   BED_BOOTLOADER[i]     Artifactory URL ('' when '-')
+#   BED_FIRMWARE[i]       Artifactory URL
 #   BED_ROUTE[i]          PRIORITY_ROUTE_SET hex string ('' when '-')
 #
 # Iterators:
@@ -183,6 +183,26 @@ bed_load() {
     local bootloader="${fields[5]}"
     [ "${bootloader}" = "-" ] && bootloader=""
 
+    local firmware="${fields[6]}"
+    if [ -n "${firmware}" ] && [ "${firmware}" != "-" ]; then
+      case "${firmware}" in
+        http://*|https://*) ;;
+        *)
+          echo "bed_load: ${tsv}:${lineno}: firmware must be an http(s) URL (got '${firmware}')" >&2
+          return 1
+          ;;
+      esac
+    fi
+    if [ -n "${bootloader}" ]; then
+      case "${bootloader}" in
+        http://*|https://*) ;;
+        *)
+          echo "bed_load: ${tsv}:${lineno}: bootloader must be '-' or an http(s) URL (got '${bootloader}')" >&2
+          return 1
+          ;;
+      esac
+    fi
+
     local route="${fields[7]}"
     [ "${route}" = "-" ] && route=""
 
@@ -215,4 +235,36 @@ bed_iter_end_devices() {
       *) echo "${i}" ;;
     esac
   done
+}
+
+# Path under ${artifacts}/ mirroring Artifactory (everything after /artifactory/).
+bed_artifact_relpath_from_url() {
+  local url="$1"
+  case "${url}" in
+    */artifactory/*)
+      echo "${url#*/artifactory/}"
+      ;;
+    *)
+      echo "bed_artifact_relpath_from_url: not an Artifactory URL: ${url}" >&2
+      return 1
+      ;;
+  esac
+}
+
+# Absolute local path for a downloaded artefact.
+bed_artifact_local_path() {
+  local artifacts_root="$1"
+  local url="$2"
+  local relpath
+  relpath=$(bed_artifact_relpath_from_url "${url}")
+  echo "${artifacts_root}/${relpath}"
+}
+
+# Unique http(s) URLs from bootloader and firmware columns.
+bed_unique_artifact_urls() {
+  local i
+  for ((i = 0; i < BED_N; i++)); do
+    [ -n "${BED_BOOTLOADER[i]}" ] && echo "${BED_BOOTLOADER[i]}"
+    [ -n "${BED_FIRMWARE[i]}" ] && echo "${BED_FIRMWARE[i]}"
+  done | sort -u
 }
