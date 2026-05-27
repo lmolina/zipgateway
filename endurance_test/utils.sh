@@ -114,7 +114,7 @@ function setup_rail_test {
 #   BED_BOARD[i]          Commander --board family (e.g. brd4205b)
 #   BED_DEVICE[i]         Commander --device token (e.g. ZGM230S)
 #   BED_ROLE[i]           zniffer | controller | switch | door_lock | pir
-#   BED_BOOTLOADER[i]     filename under ${artifacts}/
+#   BED_BOOTLOADER[i]     filename under ${artifacts}/ ('' when '-')
 #   BED_FIRMWARE[i]       filename under ${artifacts}/
 #   BED_ROUTE[i]          PRIORITY_ROUTE_SET hex string ('' when '-')
 #
@@ -180,6 +180,9 @@ bed_load() {
       return 1
     fi
 
+    local bootloader="${fields[5]}"
+    [ "${bootloader}" = "-" ] && bootloader=""
+
     local route="${fields[7]}"
     [ "${route}" = "-" ] && route=""
 
@@ -187,7 +190,7 @@ bed_load() {
     BED_BOARD+=( "${fields[2]}" )
     BED_DEVICE+=( "${fields[3]}" )
     BED_ROLE+=( "${fields[4]}" )
-    BED_BOOTLOADER+=( "${fields[5]}" )
+    BED_BOOTLOADER+=( "${bootloader}" )
     BED_FIRMWARE+=( "${fields[6]}" )
     BED_ROUTE+=( "${route}" )
 

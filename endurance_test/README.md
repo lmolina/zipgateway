@@ -45,7 +45,7 @@ Run output (logs, captures, intermediate `dsks`) is gitignored.
 | `board` | Commander `--board` family (e.g. `brd4205b`). |
 | `device` | Commander `--device` token (e.g. `ZGM230S`). |
 | `role` | `zniffer`, `controller`, `switch`, `door_lock`, or `pir`. |
-| `bootloader` | Filename under `${artifacts}/`. |
+| `bootloader` | Filename under `${artifacts}/`; `-` if the firmware ships without a separate bootloader. |
 | `firmware` | Filename under `${artifacts}/`. |
 | `route` | `PRIORITY_ROUTE_SET` hex string; `-` for zniffer/controller. |
 

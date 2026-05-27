@@ -66,7 +66,7 @@ bed_firmware_for_board() {
   local i
   for ((i = 0; i < BED_N; i++)); do
     if [ "${BED_BOARD[i]}" = "${want}" ]; then
-      echo "${BED_BOOTLOADER[i]}"
+      [ -n "${BED_BOOTLOADER[i]}" ] && echo "${BED_BOOTLOADER[i]}"
       echo "${BED_FIRMWARE[i]}"
     fi
   done | sort -u

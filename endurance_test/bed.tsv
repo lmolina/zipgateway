@@ -11,7 +11,8 @@
 #   board        Commander --board family (e.g. brd4205b, brd4401c)
 #   device       Commander --device token (e.g. ZGM230S)
 #   role         zniffer | controller | switch | door_lock | pir
-#   bootloader   filename under ${artifacts}/
+#   bootloader   filename under ${artifacts}/; '-' if the firmware ships
+#                without a separate bootloader
 #   firmware     filename under ${artifacts}/
 #   route        PRIORITY_ROUTE_SET hex string; '-' for zniffer/controller
 #

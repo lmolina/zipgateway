@@ -59,7 +59,9 @@ done
 bed_load "${BED_TSV}"
 
 for ((i = 0; i < BED_N; i++)); do
-  for firmware in "${BED_BOOTLOADER[i]}" "${BED_FIRMWARE[i]}"; do
+  firmwares=("${BED_FIRMWARE[i]}")
+  [ -n "${BED_BOOTLOADER[i]}" ] && firmwares=("${BED_BOOTLOADER[i]}" "${firmwares[@]}")
+  for firmware in "${firmwares[@]}"; do
     if [ ! -f "${script_folder}/${artifacts}/${firmware}" ]; then
       echo "Error: Missing firmware artifact: ${script_folder}/${artifacts}/${firmware}" >&2
       echo "Run ./endurance_test/01_fetch_artifacts.sh or place artifacts manually under ${script_folder}/${artifacts}" >&2
@@ -79,13 +81,15 @@ for ((i = 0; i < BED_N; i++)); do
 
   addr="${BED_HOST[i]}"
   device="${BED_DEVICE[i]}"
-  bootloader="${script_folder}/${artifacts}/${BED_BOOTLOADER[i]}"
   firmware="${script_folder}/${artifacts}/${BED_FIRMWARE[i]}"
 
   commander device info --device "${device}" --ip "$addr"
   sleep 0.5
-  commander flash "${bootloader}" --device "${device}" --ip "$addr"
-  sleep 0.5
+  if [ -n "${BED_BOOTLOADER[i]}" ]; then
+    bootloader="${script_folder}/${artifacts}/${BED_BOOTLOADER[i]}"
+    commander flash "${bootloader}" --device "${device}" --ip "$addr"
+    sleep 0.5
+  fi
   commander flash "${firmware}" --device "${device}" --ip "$addr"
   sleep 0.5
   commander flash --tokengroup znet --token MFG_ZWAVE_COUNTRY_FREQ:$REGION --device "${device}" --ip "$addr"
