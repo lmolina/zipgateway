@@ -252,6 +252,22 @@ bed_iter_end_devices() {
   done
 }
 
+# Build the reference_client URI for one end-device slot.
+#
+# Format: 'dut-<slot>.<LOCATION> [<homeid>-<nodeid>-000]'
+# NodeID = slot + 4 reflects the empirical ZGW SmartStart allocation
+# on this bench: NodeID 1 = controller, 2..5 reserved by ZGW, end
+# devices start at NodeID 6 = slot 2 + 4. If ZGW ever changes that
+# allocation, this is the only place to update.
+#
+# Requires LOCATION (from conf) and the homeid passed by the caller.
+bed_node_uri() {
+  local slot="$1"
+  local homeid="$2"
+  printf 'dut-%s.%s [%s-%04d-000]' \
+    "${slot}" "${LOCATION}" "${homeid}" "$((slot + 4))"
+}
+
 # Path under ${artifacts}/ mirroring Artifactory (everything after /artifactory/).
 bed_artifact_relpath_from_url() {
   local url="$1"
