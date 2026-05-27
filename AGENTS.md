@@ -72,8 +72,8 @@ The full 9-step walkthrough lives in `endurance_test/README.md`.
 - test parameters: `BURST_SIZE`, burst sleep, wake-up interval,
   command-class hex strings.
 
-Per-slot bed description (JLink-IP, board, device, role, bootloader,
-firmware, route, region) lives in `endurance_test/bed.tsv` and is
+Per-slot bed description (JLink-IP, board, device, role, route, region,
+firmware, bootloader) lives in `endurance_test/bed.tsv` and is
 loaded by `bed_load` in `endurance_test/utils.sh`. Bootloader and
 firmware columns hold full Artifactory URLs; `01_fetch_artifacts.sh`
 wgets each unique URL into `artifacts/` mirroring the path after

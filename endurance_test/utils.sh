@@ -168,7 +168,7 @@ bed_load() {
     fi
 
     if [ "${header_seen}" -eq 0 ]; then
-      if [ "${fields[0]}" != "slot" ]; then
+      if [ "${fields[0]}" != "id" ]; then
         echo "bed_load: ${tsv}:${lineno}: first non-comment row must be the header (got '${fields[0]}')" >&2
         return 1
       fi
@@ -176,16 +176,28 @@ bed_load() {
       continue
     fi
 
-    local slot="${fields[0]}"
-    if [ "${slot}" != "${BED_N}" ]; then
-      echo "bed_load: ${tsv}:${lineno}: slot column '${slot}' does not match expected index ${BED_N}" >&2
+    local id="${fields[0]}"
+    if [ "${id}" != "${BED_N}" ]; then
+      echo "bed_load: ${tsv}:${lineno}: id column '${id}' does not match expected index ${BED_N}" >&2
       return 1
     fi
 
-    local bootloader="${fields[5]}"
-    [ "${bootloader}" = "-" ] && bootloader=""
+    local route="${fields[5]}"
+    [ "${route}" = "-" ] && route=""
 
-    local firmware="${fields[6]}"
+    local region="${fields[6]}"
+    [ "${region}" = "-" ] && region=""
+    if [ -n "${region}" ]; then
+      case "${region}" in
+        0x[0-9A-Fa-f]*) ;;
+        *)
+          echo "bed_load: ${tsv}:${lineno}: region must be hex 0x.. or '-' (got '${fields[6]}')" >&2
+          return 1
+          ;;
+      esac
+    fi
+
+    local firmware="${fields[7]}"
     if [ -n "${firmware}" ] && [ "${firmware}" != "-" ]; then
       case "${firmware}" in
         http://*|https://*) ;;
@@ -195,6 +207,9 @@ bed_load() {
           ;;
       esac
     fi
+
+    local bootloader="${fields[8]}"
+    [ "${bootloader}" = "-" ] && bootloader=""
     if [ -n "${bootloader}" ]; then
       case "${bootloader}" in
         http://*|https://*) ;;
@@ -205,27 +220,12 @@ bed_load() {
       esac
     fi
 
-    local route="${fields[7]}"
-    [ "${route}" = "-" ] && route=""
-
-    local region="${fields[8]}"
-    [ "${region}" = "-" ] && region=""
-    if [ -n "${region}" ]; then
-      case "${region}" in
-        0x[0-9A-Fa-f]*) ;;
-        *)
-          echo "bed_load: ${tsv}:${lineno}: region must be hex 0x.. or '-' (got '${fields[8]}')" >&2
-          return 1
-          ;;
-      esac
-    fi
-
     BED_HOST+=( "${fields[1]}" )
     BED_BOARD+=( "${fields[2]}" )
     BED_DEVICE+=( "${fields[3]}" )
     BED_ROLE+=( "${fields[4]}" )
     BED_BOOTLOADER+=( "${bootloader}" )
-    BED_FIRMWARE+=( "${fields[6]}" )
+    BED_FIRMWARE+=( "${firmware}" )
     BED_ROUTE+=( "${route}" )
     BED_REGION+=( "${region}" )
 

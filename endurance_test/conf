@@ -12,7 +12,7 @@ REGION="0x01"
 # into ${artifacts}/ mirroring the Artifactory path after /artifactory/.
 artifacts="artifacts"
 
-# Per-slot bed description (board, device, role, firmware, route, ...).
+# Per-slot bed description (board, device, role, route, region, firmware, bootloader, ...).
 # Loaded by bed.sh:bed_load. Path is resolved at source time so all step
 # scripts agree on the same file whether sourced from this folder or from
 # ${ZGW_STAGE_DIR} on the zgw-host.
