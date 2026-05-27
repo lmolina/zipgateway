@@ -106,6 +106,24 @@ function setup_rail_test {
   sleep 0.1
 }
 
+# Convert a compact duration ('72h', '30m', '45s', '3d') or a bare integer
+# (seconds) to seconds on stdout. Returns non-zero on a bad expression so
+# callers can validate and fail fast. Kept narrow on purpose: GNU date(1)
+# does not accept '72h' style (only 'now + 72 hours'), and the conf format
+# was documented as '72h, 30m', so this helper is the single place that
+# bridges the gap.
+duration_to_seconds() {
+  local d="$1"
+  case "$d" in
+    ''|*[!0-9smhdSMHD]*) return 1 ;;
+    *d|*D) echo $(( ${d%[dD]} * 86400 )) ;;
+    *h|*H) echo $(( ${d%[hH]} * 3600 )) ;;
+    *m|*M) echo $(( ${d%[mM]} * 60 )) ;;
+    *s|*S) echo $(( ${d%[sS]} )) ;;
+    *)     echo "${d}" ;;
+  esac
+}
+
 # -- Bed description helpers ---------------------------------------------------
 #
 # Public surface after bed_load <tsv>:

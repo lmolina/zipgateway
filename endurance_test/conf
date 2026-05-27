@@ -45,8 +45,8 @@ PIR_LOCK_CONFIGURATION_GET="6205"
 BURST_SIZE=4
 BURST_SLEEP=32
 
-# Soft stop for the burst loop in run_on_host.sh. Any GNU date(1)
-# "now + ..." expression is accepted (e.g. 72h, 30m, 259200).
+# Soft stop for the burst loop in run_on_host.sh. Format:
+# <integer>[s|m|h|d] (e.g. 72h, 30m, 3d, 259200). Bare integer = seconds.
 # CTRL+C remains the hard stop.
 TEST_DURATION="72h"
 

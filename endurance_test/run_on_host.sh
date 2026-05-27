@@ -67,7 +67,7 @@ done
 # Give PIRs time to wake, drain queued frames, and settle before the burst.
 sleep 30
 
-END_TIME=$(date -d "now + ${TEST_DURATION}" +%s)
+END_TIME=$(( $(date +%s) + $(duration_to_seconds "${TEST_DURATION}") ))
 echo "Test will run until $(date -d "@${END_TIME}") (TEST_DURATION=${TEST_DURATION})"
 
 while [ "$(date +%s)" -lt "${END_TIME}" ]

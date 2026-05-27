@@ -21,6 +21,7 @@ if [ ! -f "${script_folder}/conf" ]; then
   exit 1
 fi
 source "${script_folder}/conf"
+source "${script_folder}/utils.sh"
 
 vars=(ZGW_HOST ZGW_USER ZGW_STAGE_DIR LOCATION logs_dir REFERENCE_CLIENT TEST_DURATION)
 for v in "${vars[@]}"; do
@@ -30,9 +31,9 @@ for v in "${vars[@]}"; do
   fi
 done
 
-if ! date -d "now + ${TEST_DURATION}" +%s >/dev/null 2>&1; then
+if ! duration_to_seconds "${TEST_DURATION}" >/dev/null; then
   echo "Error: TEST_DURATION='${TEST_DURATION}' is not a valid duration." >&2
-  echo "       expected a GNU date 'now + ...' expression (e.g. 72h, 30m)." >&2
+  echo "       expected <integer>[s|m|h|d] (e.g. 72h, 30m, 259200)." >&2
   exit 1
 fi
 
