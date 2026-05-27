@@ -29,8 +29,6 @@ This repo owns the *implementation* of those tests, not their definition.
                        over JLink-IP.
 - `[zgw-host]`         RPi running `zipgateway` and `reference_client`.
                        Currently `<ZGW_HOST>`.
-- 10 JLink boxes       BRD4205B (ZGM230). 1 zniffer, 1 NCP/controller,
-                       8 end devices
 
 Network addresses, ZGW PSK, and per-device routes live in
 `endurance_test/conf`.

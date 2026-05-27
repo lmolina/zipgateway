@@ -35,33 +35,37 @@ END_NODE_3="dut-4.${LOCATION} [${homeid}-0008-000]"
 END_NODE_4="dut-5.${LOCATION} [${homeid}-0009-000]"
 END_NODE_5="dut-6.${LOCATION} [${homeid}-0010-000]"
 END_NODE_6="dut-7.${LOCATION} [${homeid}-0011-000]"
-END_NODE_7="dut-8.${LOCATION} [${homeid}-0012-000]"
-END_NODE_8="dut-9.${LOCATION} [${homeid}-0013-000]"
+END_NODE_9="dut-10.${LOCATION} [${homeid}-0014-000]"
+END_NODE_10="dut-11.${LOCATION} [${homeid}-0015-000]"
+END_NODE_11="dut-12.${LOCATION} [${homeid}-0016-000]"
+END_NODE_12="dut-13.${LOCATION} [${homeid}-0017-000]"
+END_NODE_13="dut-14.${LOCATION} [${homeid}-0018-000]"
 
-# Configure NL devices: interval and primary route
-echo "send \"${END_NODE_7}\" COMMAND_CLASS_WAKE_UP WAKE_UP_INTERVAL_SET ${NL_WAKE_UP_INTERVAL_VALUE_SEC}01" >&3
-echo "send \"${CONTROLLER}\" COMMAND_CLASS_NETWORK_MANAGEMENT_INSTALLATION_MAINTENANCE PRIORITY_ROUTE_SET ${BED_ROUTE[8]}" >&3
-reset_board "${BED_HOST[8]}"
-sleep 10
+# Configure end devices from bed.tsv. For every end-device slot:
+#   1. PIR: queue WAKE_UP_INTERVAL_SET so the device pulls it on next wake.
+#   2. If the row carries a route, send PRIORITY_ROUTE_SET to the controller
+#      (then wait 0.2s so the controller commits before the next frame).
+#   3. PIR: reset_board so the device wakes and the gateway can deliver any
+#      queued frames before the burst loop starts.
+for slot in $(bed_iter_end_devices); do
+  end_node="dut-${slot}.${LOCATION} [${homeid}-$(printf '%04d' $((slot + 4)))-000]"
 
-echo "send \"${END_NODE_8}\" COMMAND_CLASS_WAKE_UP WAKE_UP_INTERVAL_SET ${NL_WAKE_UP_INTERVAL_VALUE_SEC}01" >&3
-echo "send \"${CONTROLLER}\" COMMAND_CLASS_NETWORK_MANAGEMENT_INSTALLATION_MAINTENANCE PRIORITY_ROUTE_SET ${BED_ROUTE[9]}" >&3
-reset_board "${BED_HOST[9]}"
-sleep 10
+  if [ "${BED_ROLE[slot]}" = "pir" ]; then
+    echo "send \"${end_node}\" COMMAND_CLASS_WAKE_UP WAKE_UP_INTERVAL_SET ${NL_WAKE_UP_INTERVAL_VALUE_SEC}01" >&3
+  fi
 
-# Set up route for other devices
-echo "send \"${CONTROLLER}\" COMMAND_CLASS_NETWORK_MANAGEMENT_INSTALLATION_MAINTENANCE PRIORITY_ROUTE_SET ${BED_ROUTE[2]}" >&3
-sleep 0.2
-echo "send \"${CONTROLLER}\" COMMAND_CLASS_NETWORK_MANAGEMENT_INSTALLATION_MAINTENANCE PRIORITY_ROUTE_SET ${BED_ROUTE[3]}" >&3
-sleep 0.2
-echo "send \"${CONTROLLER}\" COMMAND_CLASS_NETWORK_MANAGEMENT_INSTALLATION_MAINTENANCE PRIORITY_ROUTE_SET ${BED_ROUTE[4]}" >&3
-sleep 0.2
-echo "send \"${CONTROLLER}\" COMMAND_CLASS_NETWORK_MANAGEMENT_INSTALLATION_MAINTENANCE PRIORITY_ROUTE_SET ${BED_ROUTE[5]}" >&3
-sleep 0.2
-echo "send \"${CONTROLLER}\" COMMAND_CLASS_NETWORK_MANAGEMENT_INSTALLATION_MAINTENANCE PRIORITY_ROUTE_SET ${BED_ROUTE[6]}" >&3
-sleep 0.2
-echo "send \"${CONTROLLER}\" COMMAND_CLASS_NETWORK_MANAGEMENT_INSTALLATION_MAINTENANCE PRIORITY_ROUTE_SET ${BED_ROUTE[7]}" >&3
-sleep 0.2
+  if [ -n "${BED_ROUTE[slot]}" ]; then
+    echo "send \"${CONTROLLER}\" COMMAND_CLASS_NETWORK_MANAGEMENT_INSTALLATION_MAINTENANCE PRIORITY_ROUTE_SET ${BED_ROUTE[slot]}" >&3
+    sleep 0.2
+  fi
+
+  if [ "${BED_ROLE[slot]}" = "pir" ]; then
+    reset_board "${BED_HOST[slot]}"
+  fi
+done
+
+# Give PIRs time to wake, drain queued frames, and settle before the burst.
+sleep 30
 
 END_TIME=$(date -d "now + ${TEST_DURATION}" +%s)
 echo "Test will run until $(date -d "@${END_TIME}") (TEST_DURATION=${TEST_DURATION})"
@@ -86,26 +90,21 @@ do
     sleep 0.15
     echo "send \"${END_NODE_4}\" ${CMD}" >&3
     sleep 0.15
+    echo "send \"${END_NODE_9}\" ${CMD}" >&3
+    sleep 0.15
+    echo "send \"${END_NODE_10}\" ${CMD}" >&3
+    sleep 0.15
+    echo "send \"${END_NODE_11}\" ${CMD}" >&3
+    sleep 0.15
 
     CMD="${SUPERVISION} ${SESSION}${DOOR_LOCK_CONFIGURATION_GET}"
     echo "send \"${END_NODE_5}\" ${CMD}" >&3
     sleep 0.15
     echo "send \"${END_NODE_6}\" ${CMD}" >&3
     sleep 0.15
-
-    CMD="COMMAND_CLASS_SECURITY_2 SECURITY_2_NONCE_GET"
-    echo "send \"${END_NODE_1}\" ${CMD}" >&3
+    echo "send \"${END_NODE_12}\" ${CMD}" >&3
     sleep 0.15
-    echo "send \"${END_NODE_2}\" ${CMD}" >&3
-    sleep 0.15
-    echo "send \"${END_NODE_3}\" ${CMD}" >&3
-    sleep 0.15
-    echo "send \"${END_NODE_4}\" ${CMD}" >&3
-    sleep 0.15
-
-    echo "send \"${END_NODE_5}\" ${CMD}" >&3
-    sleep 0.15
-    echo "send \"${END_NODE_6}\" ${CMD}" >&3
+    echo "send \"${END_NODE_13}\" ${CMD}" >&3
     sleep 0.15
   done
 
