@@ -8,12 +8,15 @@ except for this README and `.gitkeep`. Drop the files here; do not
 commit them.
 
 Inventory and sources are documented in detail in
-[../endurance_test/README.md](../endurance_test/README.md). Short
+[../tests/endurance/README.md](../tests/endurance/README.md). Short
 version:
 
 - Radio binaries (`*.s37`, `*.hex`, `build.xml`, `conan.lock`) are
-  downloaded by `endurance_test/01_fetch_artifacts.sh` from the SDK
-  artifactory build referenced in `endurance_test/conf`.
+  downloaded by `tests/endurance/01_fetch_artifacts.sh` from the SDK
+  Artifactory build referenced in `bench/bed.tsv`.
 - The ZGW `.deb` (e.g. `zipgateway-7.18.03-Linux-armhf.deb`) is
   dropped manually after downloading it via Simplicity Studio or pulling it
   from a CI build.
+
+Intermediate output `dsks` is written here by `02_prepare_boards.sh` and
+consumed by `04_provisioning.sh`.

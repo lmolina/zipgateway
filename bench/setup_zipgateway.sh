@@ -17,7 +17,6 @@
 # - Passwordless sudo for ${ZGW_USER}.
 # ${ZGW_USER} is pi by default
 
-
 set -euo pipefail
 
 script_folder=$(dirname "$0")
@@ -28,7 +27,7 @@ if [ ! -f "${script_folder}/conf" ]; then
 fi
 source "${script_folder}/conf"
 
-vars=(ZGW_HOST ZGW_USER ZGW_STAGE_DIR ZGW_REBOOT_WAIT_SEC ZIP_GATEWAY LIBZWAVEIP artifacts)
+vars=(ZGW_HOST ZGW_USER ZGW_STAGE_DIR ZGW_REBOOT_WAIT_SEC ZIP_GATEWAY LIBZWAVEIP ARTIFACTS_DIR)
 for v in "${vars[@]}"; do
   if [ -z "${!v:-}" ]; then
     echo "Error: required variable ${v} not set in conf." >&2
@@ -49,8 +48,8 @@ fi
 echo "Staging files on ${ZGW_HOST}:${ZGW_STAGE_DIR} ..."
 ssh "${ssh_opts[@]}" "${ssh_target}" "mkdir -p '${ZGW_STAGE_DIR}'"
 rsync -a \
-  "${artifacts}/${ZIP_GATEWAY}" \
-  "${artifacts}/${LIBZWAVEIP}" \
+  "${ARTIFACTS_DIR}/${ZIP_GATEWAY}" \
+  "${ARTIFACTS_DIR}/${LIBZWAVEIP}" \
   "${script_folder}/zgw_cleanup.sh" \
   "${script_folder}/conf" \
   "${ssh_target}:${ZGW_STAGE_DIR}/"

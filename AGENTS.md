@@ -5,7 +5,7 @@
 
 Shared agent context for this repo. Self-contained: a coworker or AI agent
 should be able to operate the repo with only this file plus
-`endurance_test/README.md` (the step-by-step). Personal planning state
+`tests/endurance/README.md` (the step-by-step). Personal planning state
 (per-collaborator focus, backlog, journal) lives outside this repo.
 
 ## What this repo is
@@ -13,8 +13,7 @@ should be able to operate the repo with only this file plus
 Test bench for Z/IP Gateway (ZGW). Phases:
 
 - Phase 1 (current): endurance test. A long-duration burst-traffic load
-  against ZGW with 8 end devices, run on the endurance bed described
-  below.
+  against ZGW on testbed-1 (see `bench/bed.tsv`), run via `tests/endurance/`.
 - Phase 2: FT-01..FT-08 functional tests (different bed; deferred).
 - Phase 3+: stress / endurance suite expansion; UTF integration evaluation.
 
@@ -22,71 +21,81 @@ The test specification proper is on
 [Confluence](https://confluence.silabs.com/spaces/ZWAVE/pages/801038048/Z+IP+Gateway+Test+Plan).
 This repo owns the *implementation* of those tests, not their definition.
 
+## Layout
+
+```
+bench/              shared bring-up (neutral filenames; no step order)
+tests/endurance/    endurance test (numbered 01..04, 07 define the order)
+tests/stress/       stress test (same pattern; checks under checks/)
+artifacts/          input binaries + intermediate dsks (gitignored)
+```
+
+Each test's numbered scripts compose `bench/`. The 9-step endurance
+walkthrough lives in `tests/endurance/README.md`.
+
 ## Hardware bed (two hosts)
 
 - `[test-controller]`  developer machine. Runs Simplicity Commander,
-                       downloads CI artefacts, flashes radio boards
+                       downloads CI artifacts, flashes radio boards
                        over JLink-IP.
 - `[zgw-host]`         RPi running `zipgateway` and `reference_client`.
                        Currently `<ZGW_HOST>`.
 
-Network addresses, ZGW PSK, and per-device routes live in
-`endurance_test/conf`.
+Network addresses, ZGW PSK, and per-device routes live in `bench/conf`.
 
-## Scripts (numbered by 9-step flow position)
+## Scripts
+
+Endurance step scripts (run from `tests/endurance/`):
 
 ```
-endurance_test/
-  01_fetch_artifacts.sh    [test-controller]  download binaries
-  02_prepare_boards.sh     [test-controller]  flash and write dsks
-  03_setup_zipgateway.sh   [test-controller]  rsync .deb + reinstall + reboot zgw-host over SSH
-  05_provisioning.sh       [zgw-host]         SmartStart provisioning
-  08_run.sh                [zgw-host]         endurance load loop
+tests/endurance/
+  01_fetch_artifacts.sh    [test-controller]  -> bench/fetch_artifacts.sh
+  02_prepare_boards.sh     [test-controller]  -> bench/prepare_boards.sh
+  03_setup_zipgateway.sh   [test-controller]  -> bench/setup_zipgateway.sh
+  04_provisioning.sh       [test-controller]  -> bench/provisioning.sh
+  07_run.sh                [test-controller]  endurance load (stages run_on_host.sh)
 ```
 
-Steps 06 (power on devices in node-id order), 07 (verify node IDs via
-`reference_client`), 09 (monitor logs) are manual and have no script.
-Gaps in the script numbering signal "this step is human-driven". Step
-04 (reboot) is folded into `03_setup_zipgateway.sh`.
+Steps 05 and 06 require human intervention to trigger SmartStart inclusion
+by powering on each device sequentially and verifying that the device is
+included with the expected node ID. Verification can be done via
+`reference_client` or a Zniffer.
 
 `03_setup_zipgateway.sh` requires SSH key-based access plus passwordless
 `sudo` for `${ZGW_USER}` on `[zgw-host]`. It is the only sanctioned way
 to mutate `[zgw-host]` from the bench scripts.
 
-Utilities, no step number:
+Bench utilities:
 
-- `endurance_test/utils.sh`               sourced by every script
-- `endurance_test/zgw_cleanup.sh`         runs on [zgw-host], invoked by 03_setup_zipgateway.sh
-- `endurance_test/power_off_all_boards.sh`  manual recovery
-
-The full 9-step walkthrough lives in `endurance_test/README.md`.
+- `bench/utils.sh`               sourced by every script
+- `bench/zgw_cleanup.sh`         runs on [zgw-host], invoked by setup_zipgateway
+- `bench/power_off_all_boards.sh`  manual recovery
 
 ## Configuration
 
-`endurance_test/conf` is sourced by every script. It mixes:
+`bench/conf` is sourced by every script. It mixes:
 
 - machine-specific facts: zgw-host hostname, ZGW PSK, REGION (default
   RF region used by the gateway and as bed.tsv fallback), ZGW install path.
 - test parameters: `BURST_SIZE`, burst sleep, wake-up interval,
   command-class hex strings.
 
-Per-slot bed description (JLink-IP, board, device, role, route, region,
-firmware, bootloader) lives in `endurance_test/bed.tsv` and is
-loaded by `bed_load` in `endurance_test/utils.sh`. Bootloader and
-firmware columns hold full Artifactory URLs; `01_fetch_artifacts.sh`
-wgets each unique URL into `artifacts/` mirroring the path after
-`/artifactory/`. Splitting the rest of `conf` into machine vs test
-config is a backlog item (see personal PLAN).
+`bed.tsv` includes the per-device description (JLink-IP, board, device, role, route, region,
+firmware, bootloader). It is loaded by `bed_load`
+in `bench/utils.sh`. Bootloader and firmware columns hold full Artifactory
+URLs; `fetch_artifacts.sh` wget's each unique URL into repo-root `artifacts/`
+mirroring the path after `/artifactory/`. Splitting the rest of `conf` into
+machine vs test config is a backlog item (see personal PLAN).
 
-## Artefacts
+## Artifacts
 
 - `artifacts/`  INPUT.  CI binaries (`*.s37`, `*.hex`) and the ZGW `.deb`.
                 Gitignored except for `.gitkeep` and `README.md`. The
                 ZGW `.deb` is dropped manually (Simplicity Studio export
                 or CI build); the radio binaries are downloaded by
                 `01_fetch_artifacts.sh`.
-- `run_*/`      OUTPUT. One folder per run (logs, zniffer captures).
-                Gitignored.
+- `tests/endurance/run_*/`  OUTPUT. One folder per provisioning or run
+                (logs, zniffer captures). Gitignored.
 - `artifacts/dsks`        OUTPUT (intermediate). Generated by
                 `02_prepare_boards.sh`, consumed by `04_provisioning.sh`.
 

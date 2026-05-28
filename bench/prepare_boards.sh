@@ -48,7 +48,7 @@ for tool in commander dos2unix; do
   fi
 done
 
-vars=(artifacts BED_TSV REGION)
+vars=(ARTIFACTS_DIR BED_TSV REGION)
 for v in "${vars[@]}"; do
   if [ -z "${!v}" ]; then
     echo "Error: Required variable $v is not set in conf." >&2
@@ -58,7 +58,7 @@ done
 
 bed_load "${BED_TSV}"
 
-artifacts_root="${script_folder}/${artifacts}"
+artifacts_root="${ARTIFACTS_DIR}"
 
 for ((i = 0; i < BED_N; i++)); do
   artifact_urls=()
@@ -68,7 +68,7 @@ for ((i = 0; i < BED_N; i++)); do
     local_path=$(bed_artifact_local_path "${artifacts_root}" "${url}")
     if [ ! -f "${local_path}" ]; then
       echo "Error: Missing firmware artifact: ${local_path}" >&2
-      echo "Run ./endurance_test/01_fetch_artifacts.sh or place the file manually." >&2
+      echo "Run tests/endurance/01_fetch_artifacts.sh or place the file manually." >&2
       exit 1
     fi
   done
@@ -76,7 +76,8 @@ done
 
 cleanup_boards
 
-echo "dsks=(" > "${script_folder}/${artifacts}/dsks"
+mkdir -p "${ARTIFACTS_DIR}"
+echo "dsks=(" > "${ARTIFACTS_DIR}/dsks"
 for ((i = 0; i < BED_N; i++)); do
   echo
   echo "=========================================="
@@ -103,11 +104,11 @@ for ((i = 0; i < BED_N; i++)); do
   dsk=$(commander --apack device zwave-qrcode --timeout 2000 --tif swd --device "${device}" --ip "$addr")
   dsk=$(echo "$dsk" | grep -o 'INFO: QR code: .*')
   dsk=$(echo "$dsk" | sed -e 's|.*: ............\(.....\)\(.....\)\(.....\)\(.....\)\(.....\)\(.....\)\(.....\)\(.....\).*]|\1-\2-\3-\4-\5-\6-\7-\8|g')
-  echo "$dsk" >> "${artifacts}/dsks"
+  echo "$dsk" >> "${ARTIFACTS_DIR}/dsks"
   echo
   power_off_board "$addr"
   echo "=========================================="
 done
-echo ")" >> "${artifacts}/dsks"
+echo ")" >> "${ARTIFACTS_DIR}/dsks"
 
-dos2unix "${artifacts}/dsks"
+dos2unix "${ARTIFACTS_DIR}/dsks"

@@ -4,16 +4,18 @@
 
 LOCATION=testbed-1
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ARTIFACTS_DIR="${REPO_ROOT}/artifacts"
+
 # RF region default. Used by zgw_cleanup.sh for ZWRFRegion= and as the
 # fallback for bed.tsv rows whose region column is '-'.
 REGION="0x01"
 
-# Firmware URLs live in bed.tsv; 01_fetch_artifacts.sh downloads them
-# into ${artifacts}/ mirroring the Artifactory path after /artifactory/.
-artifacts="artifacts"
+# Firmware URLs live in bed.tsv; fetch_artifacts.sh downloads them into
+# ${ARTIFACTS_DIR}/ mirroring the Artifactory path.
 
 # Per-slot bed description (board, device, role, route, region, firmware, bootloader, ...).
-# Loaded by bed.sh:bed_load. Path is resolved at source time so all step
+# Loaded by bed_load in utils.sh. Path is resolved at source time so all step
 # scripts agree on the same file whether sourced from this folder or from
 # ${ZGW_STAGE_DIR} on the zgw-host.
 BED_TSV="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/bed.tsv"
@@ -49,5 +51,3 @@ BURST_SLEEP=32
 # <integer>[s|m|h|d] (e.g. 72h, 30m, 3d, 259200). Bare integer = seconds.
 # CTRL+C remains the hard stop.
 TEST_DURATION="72h"
-
-logs_dir="logs"

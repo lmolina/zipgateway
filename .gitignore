@@ -25,17 +25,18 @@ code-convention-tool/
 **/venv/
 **/.venv/
 
-# Per-run output (logs, captures, intermediate dsks).
-# Input binaries (CI artefacts, ZGW .deb). Tracked: only .gitkeep and README.
-!endurance_test/artifacts/.gitkeep
-!endurance_test/artifacts/README.md
+# Per-run output (logs, captures).
+tests/endurance/run_*/
+tests/stress/run_*/
 
-endurance_test/run_*/
-endurance_test/artifacts/*
-endurance_test/.reference_client_history
+# Input binaries (CI artifacts, ZGW .deb). Tracked: only .gitkeep and README.
+!artifacts/.gitkeep
+!artifacts/README.md
 
-# Legacy artefact directory (pre-T4 layout). Kept ignored for historical
-# checkouts; new layout uses top-level artifacts/.
+artifacts/*
+
+# Legacy artifact directory (pre-restructure layout).
+endurance_test/
 dist/
 
 # input binaries belong in artifacts/, never elsewhere.

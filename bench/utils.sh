@@ -286,7 +286,7 @@ bed_node_uri() {
     "${slot}" "${LOCATION}" "${homeid}" "$((slot + 4))"
 }
 
-# Path under ${artifacts}/ mirroring Artifactory (everything after /artifactory/).
+# Path under ${ARTIFACTS_DIR}/ mirroring Artifactory (everything after /artifactory/).
 bed_artifact_relpath_from_url() {
   local url="$1"
   case "${url}" in
@@ -300,7 +300,7 @@ bed_artifact_relpath_from_url() {
   esac
 }
 
-# Absolute local path for a downloaded artefact.
+# Absolute local path for a downloaded artifact.
 bed_artifact_local_path() {
   local artifacts_root="$1"
   local url="$2"
@@ -316,4 +316,15 @@ bed_unique_artifact_urls() {
     [ -n "${BED_BOOTLOADER[i]}" ] && echo "${BED_BOOTLOADER[i]}"
     [ -n "${BED_FIRMWARE[i]}" ] && echo "${BED_FIRMWARE[i]}"
   done | sort -u
+}
+
+# Create run_<UTC>/ under test_dir on [test-controller] and the matching path
+# under ${ZGW_STAGE_DIR} on [zgw-host]. Sets RUN_NAME, RUN_DIR, RUN_REMOTE_DIR.
+run_dir_init() {
+  local test_dir="$1"
+  RUN_NAME="run_$(date -u +%Y%m%dT%H%M%SZ)"
+  RUN_DIR="${test_dir}/${RUN_NAME}"
+  RUN_REMOTE_DIR="${ZGW_STAGE_DIR}/${RUN_NAME}"
+  mkdir -p "${RUN_DIR}"
+  export RUN_NAME RUN_DIR RUN_REMOTE_DIR
 }

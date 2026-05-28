@@ -3,40 +3,47 @@
 
 # Endurance test
 
-Long-duration burst load against the Z/IP Gateway. See `../AGENTS.md`
+Long-duration burst load against the Z/IP Gateway. See `../../AGENTS.md`
 for hardware bed, host roles, and conventions.
+
+Run all step scripts from this directory:
+
+```bash
+cd tests/endurance
+```
+
+Shared bring-up lives in `../../bench/` (conf, bed.tsv, utils, fetch,
+flash, ZGW setup). This test's numbered scripts define the order.
 
 ## 9-step flow
 
 | # | Where               | Action                                                                            |
 |---|---------------------|-----------------------------------------------------------------------------------|
-| 1 | `[test-controller]` | `./01_fetch_artifacts.sh` (wget each URL from `bed.tsv` into `../artifacts/`) |
-| 2 | `[test-controller]` | `./02_prepare_boards.sh` (flashes boards, writes `dsks`, powers off)              |
+| 1 | `[test-controller]` | `./01_fetch_artifacts.sh` (wget each URL from `bench/bed.tsv` into `../../artifacts/`) |
+| 2 | `[test-controller]` | `./02_prepare_boards.sh` (flashes boards, writes `../../artifacts/dsks`, powers off) |
 | 3 | `[test-controller]` | `./03_setup_zipgateway.sh` (rsyncs `zipgateway-*.deb` + `zgw_cleanup.sh` to `[zgw-host]`, runs cleanup + reinstall over SSH, reboots, waits up to `ZGW_REBOOT_WAIT_SEC` for SSH to come back) |
-| 4 | `[test-controller]` | `./04_provisioning.sh` (rsyncs `provision_on_host.sh` + `utils.sh` + `conf` + `${artifacts}/dsks` to `[zgw-host]`, runs the worker over SSH, pulls `${logs_dir}/` back) |
+| 4 | `[test-controller]` | `./04_provisioning.sh` (creates `run_<UTC>/`, stages workers + dsks on `[zgw-host]`, pulls logs including `provisioning_pl_add.log`, `reference_client.log`, and ZGW logs into that folder) |
 | 5 | manual              | power on devices one-by-one in node-id order, waiting for the inclusion to complete |
 | 6 | `[zgw-host]`        | verify node IDs in `reference_client` (`pl_list`, `list`)                         |
-| 7 | `[test-controller]` | `./07_run.sh` (rsyncs `run_on_host.sh` + `utils.sh` + `conf` to `[zgw-host]`, runs test over SSH, pulls logs back). Stops on its own after `TEST_DURATION` (default `72h` in `conf`). |
+| 7 | `[test-controller]` | `./07_run.sh` (creates `run_<UTC>/`, runs burst loop on `[zgw-host]`, pulls logs into that folder). Stops on its own after `TEST_DURATION` (default `72h` in `bench/conf`). |
 | 8 | manual              | monitor logs; CTRL+C on `[test-controller]` propagates to the `[zgw-host]` for an early stop |
 
-## Files
+## Files in this directory
 
-- `bed.tsv` -- per-slot bed description (id, jlink host, board, device, role, route, region, firmware, bootloader). One row per slot; edit this when you add or change a board. See "Bed description" below.
-- `conf` -- machine + test parameters (sourced by every script).
-- `utils.sh` -- shared functions, including the `bed_load` / `bed_iter_end_devices` helpers that parse `bed.tsv` into `BED_*` arrays.
-- `01_..07_*.sh` -- step scripts above.
-- `zgw_cleanup.sh` -- runs on `[zgw-host]`; invoked by `03_setup_zipgateway.sh` after rsync. Not user-triggered; missing numeric prefix is the signal.
-- `provision_on_host.sh` -- runs on `[zgw-host]`; invoked by `04_provisioning.sh` after rsync. Same convention: no numeric prefix = host worker.
-- `run_on_host.sh` -- runs on `[zgw-host]`; invoked by `07_run.sh` after rsync. Same convention.
-- `power_off_all_boards.sh` -- manual recovery utility.
+| File | Role |
+|------|------|
+| `01_..04_*.sh`, `07_run.sh` | Step drivers (01-04 exec `bench/`; 07 rsyncs bench + `run_on_host.sh`) |
+| `run_on_host.sh` | burst loop on `[zgw-host]`; invoked by `07_run.sh` |
+
+Shared files (`bed.tsv`, `conf`, `utils.sh`, host workers except `run_on_host.sh`) live in `../../bench/`. See `../../bench/README.md`.
 
 Steps 3, 4, and 7 prerequisites on `[zgw-host]`: SSH key-based access for `${ZGW_USER}` and passwordless `sudo`. Without those, the driver scripts exit with a precondition error.
 
-Run output (logs, captures, intermediate `dsks`) is gitignored.
+Run output lives under `run_<UTC>/` (logs, captures). Gitignored.
 
 ## Bed description
 
-`bed.tsv` is one tab-separated row per slot. Lines starting with `#` and blank lines are ignored. Columns (in order):
+`../../bench/bed.tsv` is one tab-separated row per slot. Lines starting with `#` and blank lines are ignored. Columns (in order):
 
 | Column | Meaning |
 |---|---|

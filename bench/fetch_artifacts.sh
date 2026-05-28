@@ -20,8 +20,8 @@ fi
 source "${script_folder}/conf"
 source "${script_folder}/utils.sh"
 
-if [ -z "${artifacts:-}" ]; then
-  echo "Error: artifacts variable is not set in conf." >&2
+if [ -z "${ARTIFACTS_DIR:-}" ]; then
+  echo "Error: ARTIFACTS_DIR variable is not set in conf." >&2
   exit 1
 fi
 if [ -z "${BED_TSV:-}" ]; then
@@ -29,7 +29,7 @@ if [ -z "${BED_TSV:-}" ]; then
   exit 1
 fi
 
-target_dir="${script_folder}/${artifacts}"
+target_dir="${ARTIFACTS_DIR}"
 mkdir -p "${target_dir}"
 
 if ! command -v wget >/dev/null 2>&1; then
@@ -59,4 +59,4 @@ EOF
 fi
 
 echo "Artifacts ready in ${target_dir}."
-echo "Reminder: place zipgateway-7.18.03-Linux-armhf.deb under ./artifacts/."
+echo "Reminder: place zipgateway-7.18.03-Linux-armhf.deb under ${ARTIFACTS_DIR}/."

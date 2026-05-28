@@ -8,6 +8,11 @@ shopt -s nullglob
 
 mydir=$(dirname "$0")
 source "${mydir}/conf"
+if [ -z "${RUN_LOGS_DIR:-}" ]; then
+  echo "Error: RUN_LOGS_DIR is not set." >&2
+  exit 1
+fi
+logs_dir="${RUN_LOGS_DIR}"
 source "${mydir}/utils.sh"
 
 bed_load "${BED_TSV}"
