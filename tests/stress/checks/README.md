@@ -16,12 +16,15 @@ Conventions:
   + `summary.json` into the same folder. Exit code reflects the
   verdict (0 = pass, non-zero = fail per the test's DoD).
 
-Planned checks (filenames are placeholders until T5/T6 land):
+Checks:
 
-| File | Test | Signal |
-|------|------|--------|
-| `st01_heartbeat.sh` | ST-01 | SAPI heartbeat to NCP; flags timeouts |
-| `st01_analyze.sh`   | ST-01 | TRANSMIT_COMPLETE_OK / SendDataBridge ratio in ZGW log + heartbeat-timeout count |
+| File | Test | Signal | Status |
+|------|------|--------|--------|
+| `st01_heartbeat.sh` | ST-01 | mDNS (`avahi-resolve`) liveness probe of ZGW from `[test-controller]`; one timestamped CSV row per sample, `status` in {ok,fail,timeout} | done |
+| `st01_analyze.sh`   | ST-01 | post-run: ZGW-log tx markers (`TRANSMIT_COMPLETE_OK` / SendData) + heartbeat-timeout count -> verdict | planned |
+
+`st01_heartbeat.sh` is standalone-runnable (`--out FILE [--homeid HEX]
+[--cadence S] [--timeout-ms MS] [--duration S]`).
 
 `tests/stress/07_run.sh` will start the heartbeat in the background
 before the load loop and call the analyzer once the load stops.
