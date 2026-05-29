@@ -14,15 +14,15 @@
 
 set -euo pipefail
 
-TEST_DIR="$(cd "$(dirname "$0")" && pwd)"
+export TEST_DIR="$(cd "$(dirname "$0")" && pwd)"
 BENCH_DIR="$(cd "${TEST_DIR}/../../bench" && pwd)"
 
-if [ ! -f "${BENCH_DIR}/conf" ]; then
-  echo "Error: conf file not found in ${BENCH_DIR}" >&2
+if [ ! -f "${TEST_DIR}/conf" ]; then
+  echo "Error: conf file not found in ${TEST_DIR}" >&2
   exit 1
 fi
-# shellcheck source=../../bench/conf
-source "${BENCH_DIR}/conf"
+# shellcheck source=conf
+source "${TEST_DIR}/conf"
 # shellcheck source=../../bench/utils.sh
 source "${BENCH_DIR}/utils.sh"
 
@@ -65,8 +65,8 @@ ssh "${ssh_opts[@]}" "${ssh_target}" "mkdir -p '${ZGW_STAGE_DIR}' '${RUN_REMOTE_
 rsync -a \
   "${TEST_DIR}/run_on_host.sh" \
   "${BENCH_DIR}/utils.sh" \
-  "${BENCH_DIR}/bed.tsv" \
-  "${BENCH_DIR}/conf" \
+  "${TEST_DIR}/bed.tsv" \
+  "${TEST_DIR}/conf" \
   "${ssh_target}:${ZGW_STAGE_DIR}/"
 
 echo "Running run_on_host.sh on ${ZGW_HOST} (CTRL+C to stop) ..."

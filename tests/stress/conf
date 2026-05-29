@@ -1,0 +1,53 @@
+# SPDX-FileCopyrightText: Silicon Laboratories Inc. <https://www.silabs.com/>
+#
+# SPDX-License-Identifier: LicenseRef-MSLA
+
+LOCATION=testbed-1
+
+TEST_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ARTIFACTS_DIR="${TEST_ROOT}/artifacts"
+
+# RF region default. Used by zgw_cleanup.sh for ZWRFRegion= and as the
+# fallback for bed.tsv rows whose region column is '-'.
+REGION="0x01"
+
+# Firmware URLs live in bed.tsv; fetch_artifacts.sh downloads them into
+# ${ARTIFACTS_DIR}/ mirroring the Artifactory path.
+
+# Per-slot bed description (board, device, role, route, region, firmware, bootloader, ...).
+# Loaded by bed_load in utils.sh. Path is resolved at source time so all step
+# scripts agree on the same file whether sourced from this folder or from
+# ${ZGW_STAGE_DIR} on the zgw-host.
+BED_TSV="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/bed.tsv"
+
+NL_WAKE_UP_INTERVAL_VALUE_SEC="000014"
+
+ZGW_HOST=<ZGW_HOST>
+ZGW_USER=pi
+ZGW_STAGE_DIR=/home/$ZGW_USER/zgw-test-bench-stage
+ZGW_REBOOT_WAIT_SEC=60
+
+ZIP_GATEWAY="zipgateway-7.18.03-Linux-armhf.deb"
+LIBZWAVEIP="libzwaveip-7.18.02-Linux-stretch-armhf-Binaries.zip"
+LIBZWAVEIP_DIR="${LIBZWAVEIP%.zip}"
+REFERENCE_CLIENT="${ZGW_STAGE_DIR}/${LIBZWAVEIP_DIR}/reference_client"
+ZipLanGw6="<ZIP_LAN_GW6>"
+ZipPanIp6="<ZIP_PAN_IP6>"
+ZipLanIp6="<ZIP_LAN_IP6>"
+ZipPSK="<ZIP_PSK>"
+ZipSerialAPIPortName="/dev/serial/by-id/usb-Silicon_Labs_J-Link_Pro_OB_lamt-testbed-1-controller_000440155293-if00"
+
+POLL_CMD="identify"
+SUPERVISION="COMMAND_CLASS_SUPERVISION SUPERVISION_GET"
+SWITCH_BINARY_SET_ON="042501FF00"
+SWITCH_BINARY_SET_OFF="0425010000"
+DOOR_LOCK_CONFIGURATION_GET="6205"
+PIR_LOCK_CONFIGURATION_GET="6205"
+
+BURST_SIZE=4
+BURST_SLEEP=32
+
+# Soft stop for the burst loop in run_on_host.sh. Format:
+# <integer>[s|m|h|d] (e.g. 72h, 30m, 3d, 259200). Bare integer = seconds.
+# CTRL+C remains the hard stop.
+TEST_DURATION="72h"

@@ -13,7 +13,8 @@ should be able to operate the repo with only this file plus
 Test bench for Z/IP Gateway (ZGW). Phases:
 
 - Phase 1 (current): endurance test. A long-duration burst-traffic load
-  against ZGW on testbed-1 (see `bench/bed.tsv`), run via `tests/endurance/`.
+  against ZGW on testbed-1 (see `tests/endurance/bed.tsv`), run via
+  `tests/endurance/`.
 - Phase 2: FT-01..FT-08 functional tests (different bed; deferred).
 - Phase 3+: stress / endurance suite expansion; UTF integration evaluation.
 
@@ -41,7 +42,8 @@ walkthrough lives in `tests/endurance/README.md`.
 - `[zgw-host]`         RPi running `zipgateway` and `reference_client`.
                        Currently `<ZGW_HOST>`.
 
-Network addresses, ZGW PSK, and per-device routes live in `bench/conf`.
+Network addresses, ZGW PSK, and per-device routes live in each test's
+`conf` and `bed.tsv` (e.g. `tests/endurance/conf`).
 
 ## Scripts
 
@@ -73,19 +75,26 @@ Bench utilities:
 
 ## Configuration
 
-`bench/conf` is sourced by every script. It mixes:
+Each test owns its own `conf` and `bed.tsv` under `tests/<name>/`
+(same syntax across tests, swappable). `tests/<name>/conf` mixes:
 
 - machine-specific facts: zgw-host hostname, ZGW PSK, REGION (default
-  RF region used by the gateway and as bed.tsv fallback), ZGW install path.
+  RF region used by the gateway and as `bed.tsv` fallback), ZGW install path.
 - test parameters: `BURST_SIZE`, burst sleep, wake-up interval,
   command-class hex strings.
 
-`bed.tsv` includes the per-device description (JLink-IP, board, device, role, route, region,
-firmware, bootloader). It is loaded by `bed_load`
-in `bench/utils.sh`. Bootloader and firmware columns hold full Artifactory
-URLs; `fetch_artifacts.sh` wget's each unique URL into repo-root `artifacts/`
-mirroring the path after `/artifactory/`. Splitting the rest of `conf` into
-machine vs test config is a backlog item (see personal PLAN).
+The thin wrappers under `tests/<name>/` export `TEST_DIR` (the test's
+own directory) before exec'ing into `bench/`; `bench/` scripts then
+source `${TEST_DIR}/conf`. This is the contract any new test under
+`tests/` must follow.
+
+`tests/<name>/bed.tsv` is the per-device description (JLink-IP, board,
+device, role, route, region, firmware, bootloader). It is loaded by
+`bed_load` in `bench/utils.sh`. Bootloader and firmware columns hold
+full Artifactory URLs; `fetch_artifacts.sh` wget's each unique URL
+into repo-root `artifacts/` mirroring the path after `/artifactory/`.
+Splitting the rest of `conf` into machine vs test config is a backlog
+item.
 
 ## Artifacts
 

@@ -17,12 +17,17 @@ set -euo pipefail
 
 script_folder=$(dirname "$0")
 
-if [ ! -f "${script_folder}/conf" ]; then
-  echo "Error: conf file not found in ${script_folder}" >&2
+if [ -z "${TEST_DIR:-}" ]; then
+  echo "Error: TEST_DIR is not set." >&2
+  echo "       call this script from a tests/<name>/ wrapper." >&2
   exit 1
 fi
-# shellcheck source=conf
-source "${script_folder}/conf"
+if [ ! -f "${TEST_DIR}/conf" ]; then
+  echo "Error: conf file not found in ${TEST_DIR}" >&2
+  exit 1
+fi
+# shellcheck source=/dev/null
+source "${TEST_DIR}/conf"
 
 vars=(ZGW_HOST ZGW_USER ZGW_STAGE_DIR LOCATION ARTIFACTS_DIR REFERENCE_CLIENT)
 for v in "${vars[@]}"; do
@@ -67,8 +72,8 @@ ssh "${ssh_opts[@]}" "${ssh_target}" \
 rsync -a \
   "${script_folder}/provision_on_host.sh" \
   "${script_folder}/utils.sh" \
-  "${script_folder}/bed.tsv" \
-  "${script_folder}/conf" \
+  "${TEST_DIR}/bed.tsv" \
+  "${TEST_DIR}/conf" \
   "${ssh_target}:${ZGW_STAGE_DIR}/"
 rsync -a \
   "${ARTIFACTS_DIR}/dsks" \

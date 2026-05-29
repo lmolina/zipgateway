@@ -5,11 +5,11 @@
 
 set -euo pipefail
 
-TEST_DIR="$(cd "$(dirname "$0")" && pwd)"
+export TEST_DIR="$(cd "$(dirname "$0")" && pwd)"
 BENCH_DIR="$(cd "${TEST_DIR}/../../bench" && pwd)"
 
-# shellcheck source=../../bench/conf
-source "${BENCH_DIR}/conf"
+# shellcheck source=conf
+source "${TEST_DIR}/conf"
 # shellcheck source=../../bench/utils.sh
 source "${BENCH_DIR}/utils.sh"
 

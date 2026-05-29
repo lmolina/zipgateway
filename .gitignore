@@ -29,7 +29,13 @@ code-convention-tool/
 tests/endurance/run_*/
 tests/stress/run_*/
 
-# Input binaries (CI artifacts, ZGW .deb). Tracked: only .gitkeep and README.
+# Per-test input binaries (CI artifacts, ZGW .deb) live under
+# tests/<name>/artifacts/. Ignore their contents; keep the dir via .gitkeep.
+tests/*/artifacts/*
+!tests/*/artifacts/.gitkeep
+
+# Legacy repo-root artifacts/ (pre per-test layout). Tracked: only
+# .gitkeep and README.
 !artifacts/.gitkeep
 !artifacts/README.md
 

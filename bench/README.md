@@ -5,21 +5,34 @@
 
 Shared bring-up logic for all tests in this repository. Each test under
 `tests/<name>/` owns its own numbered `0N_*.sh` scripts that call into
-this directory.
+this directory, plus its own `conf` and `bed.tsv`.
+
+## Contract
+
+Every script in this directory expects the caller to export `TEST_DIR`
+pointing at the test directory that owns the run, e.g.
+
+```bash
+export TEST_DIR=/abs/path/to/tests/endurance
+exec /abs/path/to/bench/fetch_artifacts.sh
+```
+
+The bench script then sources `${TEST_DIR}/conf` (which sets
+`BED_TSV=${TEST_DIR}/bed.tsv` via `dirname`) and resolves shared
+helpers from `${0%/*}/utils.sh`. The thin wrappers under
+`tests/<name>/` already do this.
 
 ## Contents
 
 | File | Role |
 |------|------|
-| `conf` | Z/IP Gateway + test parameters (`bench/conf`; sourced by every script) |
-| `bed.tsv` | Per-device description (JLink, board, role, route, firmware URLs) |
-| `utils.sh` | `bed_load`, board power helpers, artifact path helpers |
-| `fetch_artifacts.sh` | wget unique URLs from `bed.tsv` into repo-root `artifacts/` |
+| `utils.sh` | `bed_load`, board power helpers, artifact path helpers, `run_dir_init` |
+| `fetch_artifacts.sh` | wget unique URLs from `${TEST_DIR}/bed.tsv` into repo-root `artifacts/` |
 | `prepare_boards.sh` | flash boards, write `artifacts/dsks`, power off |
 | `setup_zipgateway.sh` | rsync ZGW `.deb` to `[zgw-host]`, cleanup, reinstall, reboot |
 | `provisioning.sh` | SSH driver: stage workers + dsks, run SmartStart, pull logs into `run_<UTC>/` |
 | `provision_on_host.sh` | SmartStart worker on `[zgw-host]`; invoked by `provisioning.sh` |
 | `zgw_cleanup.sh` | purge/reinstall ZGW on `[zgw-host]` |
-| `power_off_all_boards.sh` | manual recovery: power off every slot in `bed.tsv` |
+| `power_off_all_boards.sh` | manual recovery: power off every slot in `${TEST_DIR}/bed.tsv` |
 
 Run a test from its directory, e.g. `cd tests/endurance && ./01_fetch_artifacts.sh`.

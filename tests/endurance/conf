@@ -4,8 +4,8 @@
 
 LOCATION=testbed-1
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ARTIFACTS_DIR="${REPO_ROOT}/artifacts"
+TEST_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ARTIFACTS_DIR="${TEST_ROOT}/artifacts"
 
 # RF region default. Used by zgw_cleanup.sh for ZWRFRegion= and as the
 # fallback for bed.tsv rows whose region column is '-'.

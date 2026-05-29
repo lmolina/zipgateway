@@ -5,5 +5,6 @@
 
 set -euo pipefail
 
-BENCH_DIR="$(cd "$(dirname "$0")/../../bench" && pwd)"
+export TEST_DIR="$(cd "$(dirname "$0")" && pwd)"
+BENCH_DIR="$(cd "${TEST_DIR}/../../bench" && pwd)"
 exec "${BENCH_DIR}/fetch_artifacts.sh"
