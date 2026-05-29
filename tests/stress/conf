@@ -59,3 +59,22 @@ BURST_SLEEP=32
 # CTRL+C remains the hard stop.
 # tune at the T8 shakedown.
 TEST_DURATION="72h"
+
+# ST-01 heartbeat probe (checks/st01_heartbeat.sh).
+#   HEARTBEAT_CADENCE_S   seconds between mDNS liveness samples
+#   HEARTBEAT_TIMEOUT_S   per-sample avahi-resolve timeout (seconds)
+HEARTBEAT_CADENCE_S=10
+HEARTBEAT_TIMEOUT_S=5
+
+# ST-01 analyzer (checks/st01_analyze.sh) verdict thresholds.
+#   ST01_MAX_TIMEOUT_STREAK  FAIL if >= this many consecutive heartbeat
+#                            timeouts (3 @ 10s cadence ~= a 30s wedge).
+#   ST01_MAX_TX_GAP_S        corroborating: flag if the ZGW log shows no
+#                            tx-complete marker for longer than this while
+#                            the run was active.
+#   ST01_TX_MARKER_RE        grep -E regex for a successful NCP transmit in
+#                            the ZGW log. Wording is ZGW-version coupled;
+#                            verify/adjust at the shakedown.
+ST01_MAX_TIMEOUT_STREAK=3
+ST01_MAX_TX_GAP_S=60
+ST01_TX_MARKER_RE="TRANSMIT_COMPLETE_OK|SendData(Bridge)?.*(OK|complete)"
