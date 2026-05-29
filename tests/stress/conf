@@ -44,10 +44,18 @@ SWITCH_BINARY_SET_OFF="0425010000"
 DOOR_LOCK_CONFIGURATION_GET="6205"
 PIR_LOCK_CONFIGURATION_GET="6205"
 
+# Burst knobs for the ST-01 stress loop (run_on_host.sh). These are the
+# primary levers for NCP tx-queue pressure; tune them during the T8
+# shakedown if the bed does not reproduce the lockup.
+#   BURST_SIZE  frames per device per burst window
+#   SEND_SLEEP  pause between individual sends inside a burst (seconds)
+#   BURST_SLEEP idle gap between burst windows (seconds)
 BURST_SIZE=4
+SEND_SLEEP=0.15
 BURST_SLEEP=32
 
 # Soft stop for the burst loop in run_on_host.sh. Format:
 # <integer>[s|m|h|d] (e.g. 72h, 30m, 3d, 259200). Bare integer = seconds.
 # CTRL+C remains the hard stop.
+# tune at the T8 shakedown.
 TEST_DURATION="72h"

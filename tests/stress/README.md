@@ -33,7 +33,7 @@ SmartStart bring-up):
 | 4 | `[test-controller]` | `./04_provisioning.sh` (creates `run_<UTC>/`, pulls logs into that folder) |
 | 5 | manual              | power on devices one-by-one in node-id order |
 | 6 | `[zgw-host]`        | verify node IDs in `reference_client` |
-| 7 | `[test-controller]` | `./07_run.sh` (load + parallel checks; writes `run_<UTC>/verdict.txt`) -- **T4..T7** |
+| 7 | `[test-controller]` | `./07_run.sh` (load now; parallel checks + `run_<UTC>/verdict.txt` wired in by a later task) |
 | 8 | manual              | inspect `run_<UTC>/verdict.txt`, `summary.json`, and pulled logs |
 
 ## Files in this directory
@@ -41,8 +41,8 @@ SmartStart bring-up):
 | File | Role |
 |------|------|
 | `01_..04_*.sh` | Step drivers (01-03 exec `bench/`; 04 wraps `bench/provisioning.sh` after creating `run_<UTC>/`) |
-| `07_run.sh` | (T4..T7) load driver + parallel checks + analyzer wiring |
-| `run_on_host.sh` | (T4) burst loop on `[zgw-host]`; >=16 devices |
+| `07_run.sh` | load driver (stages + runs `run_on_host.sh`, pulls logs); checks + analyzer wiring lands later |
+| `run_on_host.sh` | stress burst loop on `[zgw-host]`; drives every end-device slot (>=16) each burst |
 | `conf` | Z/IP Gateway + stress-test parameters (sourced by all scripts; sets `BED_TSV` to the file next to it) |
 | `bed.tsv` | Per-device description for this test |
 | `checks/` | One script per verdict signal (heartbeat probes, log analyzers). See `checks/README.md`. |
