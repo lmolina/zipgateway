@@ -26,13 +26,15 @@ helpers from `${0%/*}/utils.sh`. The thin wrappers under
 
 | File | Role |
 |------|------|
-| `utils.sh` | `bed_load`, board power helpers, artifact path helpers, `run_dir_init` |
+| `utils.sh` | `bed_load`, board power helpers, artifact path helpers, `run_dir_attach` |
+| `init_test_run.sh` | step 00: `mkdir` the run folder (fails if it exists), drop a manifest |
 | `fetch_artifacts.sh` | wget unique URLs from `${TEST_DIR}/bed.tsv` into repo-root `artifacts/` |
 | `prepare_boards.sh` | flash boards, write `artifacts/dsks`, power off |
 | `setup_zipgateway.sh` | rsync ZGW `.deb` to `[zgw-host]`, cleanup, reinstall, reboot |
-| `provisioning.sh` | SSH driver: stage workers + dsks, run SmartStart, pull logs into `run_<UTC>/` |
+| `provisioning.sh` | SSH driver: stage workers + dsks, run SmartStart, pull logs into `${STEP_DIR}` |
 | `provision_on_host.sh` | SmartStart worker on `[zgw-host]`; invoked by `provisioning.sh` |
 | `zgw_cleanup.sh` | purge/reinstall ZGW on `[zgw-host]` |
 | `power_off_all_boards.sh` | manual recovery: power off every slot in `${TEST_DIR}/bed.tsv` |
 
-Run a test from its directory, e.g. `cd tests/endurance && ./01_fetch_artifacts.sh`.
+Run a test from its directory, e.g.
+`cd tests/endurance && ./00_init_test_run.sh run_<test_name> && ./01_fetch_artifacts.sh ./run_<test_name>`.

@@ -5,8 +5,15 @@
 #
 # Run from [test-controller]:
 # 1. Stages provision_on_host.sh + utils.sh + conf + dsks on [zgw-host]
-# 2. Runs the script over SSH
-# 3. Pulls back logs to ${LOG_PULL_DIR} (set by the test wrapper).
+# 2. Runs the worker over SSH
+# 3. Pulls back logs to ${STEP_DIR} on [test-controller].
+#
+# Required env (set by the tests/<name>/04_provisioning.sh wrapper):
+#   TEST_DIR          path to the test dir (conf + bed.tsv)
+#   RUN_DIR           run root on [test-controller]
+#   RUN_REMOTE_DIR    run root on [zgw-host]
+#   STEP_DIR          ${RUN_DIR}/04_provisioning
+#   STEP_REMOTE_DIR   ${RUN_REMOTE_DIR}/04_provisioning
 #
 # Prerequisites on [zgw-host]:
 # - SSH key-based access for ${ZGW_USER}
@@ -37,10 +44,13 @@ for v in "${vars[@]}"; do
   fi
 done
 
-if [ -z "${LOG_PULL_DIR:-}" ] || [ -z "${RUN_REMOTE_DIR:-}" ]; then
-  echo "Error: LOG_PULL_DIR and RUN_REMOTE_DIR must be set (tests/<name>/04_provisioning.sh)." >&2
-  exit 1
-fi
+run_vars=(RUN_DIR RUN_REMOTE_DIR STEP_DIR STEP_REMOTE_DIR)
+for v in "${run_vars[@]}"; do
+  if [ -z "${!v:-}" ]; then
+    echo "Error: ${v} must be set (tests/<name>/04_provisioning.sh)." >&2
+    exit 1
+  fi
+done
 
 if [ ! -f "${ARTIFACTS_DIR}/dsks" ]; then
   echo "Error: ${ARTIFACTS_DIR}/dsks not found." >&2
@@ -68,7 +78,7 @@ fi
 
 echo "Staging provisioning files on ${ZGW_HOST}:${ZGW_STAGE_DIR} ..."
 ssh "${ssh_opts[@]}" "${ssh_target}" \
-  "mkdir -p '${ZGW_STAGE_DIR}/artifacts'"
+  "mkdir -p '${ZGW_STAGE_DIR}/artifacts' '${STEP_REMOTE_DIR}'"
 rsync -a \
   "${script_folder}/provision_on_host.sh" \
   "${script_folder}/utils.sh" \
@@ -79,15 +89,14 @@ rsync -a \
   "${ARTIFACTS_DIR}/dsks" \
   "${ssh_target}:${ZGW_STAGE_DIR}/artifacts/"
 
-echo "Running provision_on_host.sh on ${ZGW_HOST} (logs -> ${RUN_REMOTE_DIR}) ..."
-ssh "${ssh_opts[@]}" "${ssh_target}" "mkdir -p '${RUN_REMOTE_DIR}'"
+echo "Running provision_on_host.sh on ${ZGW_HOST} (logs -> ${STEP_REMOTE_DIR}) ..."
 ssh "${ssh_opts[@]}" "${ssh_target}" \
-  "cd '${ZGW_STAGE_DIR}' && sudo RUN_LOGS_DIR='${RUN_REMOTE_DIR}' bash provision_on_host.sh"
+  "cd '${ZGW_STAGE_DIR}' && sudo RUN_DIR='${RUN_REMOTE_DIR}' bash provision_on_host.sh"
 
-echo "Pulling logs back to ${LOG_PULL_DIR}/ ..."
-mkdir -p "${LOG_PULL_DIR}"
+echo "Pulling logs back to ${STEP_DIR}/ ..."
+mkdir -p "${STEP_DIR}"
 rsync -a \
-  "${ssh_target}:${RUN_REMOTE_DIR}/" \
-  "${LOG_PULL_DIR}/"
+  "${ssh_target}:${STEP_REMOTE_DIR}/" \
+  "${STEP_DIR}/"
 
 echo "Provisioning complete."

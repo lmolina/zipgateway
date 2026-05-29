@@ -13,7 +13,7 @@
 #      consecutive 'timeout' rows == a wedge. The longest streak and its
 #      start time are reported.
 #
-#   2. ZGW log tx markers (TRANSMIT_COMPLETE_OK / SendData...): corroborating.
+#   2. ZGW log tx markers (TRANSMIT_COMPLETE_OK): corroborating.
 #      A successful NCP transmit is logged by ZGW; if those markers stop
 #      advancing for too long while the run was active, the tx path was
 #      stuck. The marker regex is ZGW-version coupled (ST01_TX_MARKER_RE in
@@ -61,14 +61,13 @@ fi
 # Thresholds (conf overrides; defaults keep the analyzer standalone-runnable).
 MAX_STREAK="${ST01_MAX_TIMEOUT_STREAK:-3}"
 MAX_TX_GAP_S="${ST01_MAX_TX_GAP_S:-60}"
-TX_MARKER_RE="${ST01_TX_MARKER_RE:-TRANSMIT_COMPLETE_OK|SendData(Bridge)?.*(OK|complete)}"
+TX_MARKER_RE="${ST01_TX_MARKER_RE:-TRANSMIT_COMPLETE_OK}"
 
 VERDICT_TXT="${RUN_DIR}/verdict.txt"
 SUMMARY_JSON="${RUN_DIR}/summary.json"
 
-# --- Locate inputs ----------------------------------------------------------
-hb_csv=$(find "${RUN_DIR}" -maxdepth 2 -type f -name '*heartbeat*.csv' 2>/dev/null | sort | head -n1)
-zgw_log=$(find "${RUN_DIR}" -maxdepth 2 -type f -name 'zipgateway.log' 2>/dev/null | sort | head -n1)
+hb_csv="${RUN_DIR}/07_run/st01_heartbeat.csv"
+zgw_log="${RUN_DIR}/07_run/zipgateway.log"
 
 reasons=()
 inconclusive=0
@@ -118,7 +117,12 @@ tx_marker_count=0
 tx_max_gap_s=0
 tx_lockup=0
 if [ -n "${zgw_log}" ] && [ -s "${zgw_log}" ]; then
-  tx_marker_count=$(grep -E -c "${TX_MARKER_RE}" "${zgw_log}" 2>/dev/null || echo 0)
+  # `grep -c` prints the count (incl. "0") AND exits 1 on no matches.
+  # `... || echo 0` would then append a second "0" -> "0\n0", breaking
+  # the `[ -eq 0 ]` test below. Use a fallback assignment so the captured
+  # value is grep's stdout in the no-match case (already "0") and only
+  # overridden to 0 when grep itself errors (e.g. unreadable file).
+  tx_marker_count=$(grep -E -c "${TX_MARKER_RE}" "${zgw_log}" 2>/dev/null) || tx_marker_count=0
 
   if [ "${tx_marker_count}" -eq 0 ]; then
     # No markers at all: either the run never transmitted (wedge from the

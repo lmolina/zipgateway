@@ -18,40 +18,31 @@ cd tests/stress
 
 Shared bring-up lives in `../../bench/` (utils, fetch, flash, ZGW
 setup, provisioning). This test owns its `conf` and `bed.tsv`
-(forked from endurance for now; tune for ST-01 before T8).
 
-## Flow
 
-The first four steps are identical to the endurance test (same
-SmartStart bring-up):
 
 | # | Where               | Action                                                                            |
 |---|---------------------|-----------------------------------------------------------------------------------|
-| 1 | `[test-controller]` | `./01_fetch_artifacts.sh` |
-| 2 | `[test-controller]` | `./02_prepare_boards.sh` |
-| 3 | `[test-controller]` | `./03_setup_zipgateway.sh` |
-| 4 | `[test-controller]` | `./04_provisioning.sh` (creates `run_<UTC>/`, pulls logs into that folder) |
+| 0 | `[test-controller]` | `./00_init_test_run.sh` mints `run_<UTC>/` |
+| 1 | `[test-controller]` | `./01_fetch_artifacts.sh <run_dir>` |
+| 2 | `[test-controller]` | `./02_prepare_boards.sh <run_dir>` |
+| 3 | `[test-controller]` | `./03_setup_zipgateway.sh <run_dir>` |
+| 4 | `[test-controller]` | `./04_provisioning.sh <run_dir>` (pulls logs into `<run_dir>/04_provisioning/`) |
 | 5 | manual              | power on devices one-by-one in node-id order |
 | 6 | `[zgw-host]`        | verify node IDs in `reference_client` |
-| 7 | `[test-controller]` | `./07_run.sh` (load now; parallel checks + `run_<UTC>/verdict.txt` wired in by a later task) |
-| 8 | manual              | inspect `run_<UTC>/verdict.txt`, `summary.json`, and pulled logs |
+| 7 | `[test-controller]` | `./07_run.sh <run_dir>` (detects HomeID once from the ZGW log, runs the load, stops the probe, pulls logs, runs the analyzer; writes `<run_dir>/verdict.txt` + `summary.json` and exits 0=PASS/1=FAIL/2=INCONCLUSIVE) |
+| 8 | manual              | inspect `<run_dir>/verdict.txt`, `summary.json`, and pulled logs under `<run_dir>/07_run/` |
 
 ## Files in this directory
 
 | File | Role |
 |------|------|
-| `01_..04_*.sh` | Step drivers (01-03 exec `bench/`; 04 wraps `bench/provisioning.sh` after creating `run_<UTC>/`) |
-| `07_run.sh` | load driver (stages + runs `run_on_host.sh`, pulls logs); checks + analyzer wiring lands later |
-| `run_on_host.sh` | stress burst loop on `[zgw-host]`; drives every end-device slot (>=16) each burst |
+| `00_init_test_run.sh` | mints `run_<UTC>/` (thin wrapper around `bench/init_test_run.sh`) |
+| `01_..04_*.sh` | Step drivers; each takes `<run_dir>` as `$1` and tees into `<run_dir>/<step>/console.log` |
+| `07_run.sh` | orchestrator: heartbeat probe + load driver + analyzer; exits with the ST-01 verdict code |
+| `run_on_host.sh` | stress burst loop on `[zgw-host]`; reads `RUN_DIR` from env, drives every end-device slot (>=16) each burst |
 | `conf` | Z/IP Gateway + stress-test parameters (sourced by all scripts; sets `BED_TSV` to the file next to it) |
 | `bed.tsv` | Per-device description for this test |
 | `checks/` | One script per verdict signal (heartbeat probes, log analyzers). See `checks/README.md`. |
 
 Run output lives under `run_<UTC>/` (logs, captures, verdict). Gitignored.
-
-## Bed description
-
-`bed.tsv` is initially a copy of `tests/endurance/bed.tsv`; tune for
-ST-01 as needed. ST-01 requires >=16 end devices; testbed-1
-currently lists 19 end-device slots. Use `REGION=0x01` (US classic,
-no LR) until ZGW-3426 is resolved.

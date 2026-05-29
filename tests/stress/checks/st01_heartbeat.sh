@@ -15,16 +15,13 @@
 #
 # Options:
 #   --out FILE         CSV output path (required).
-#   --homeid HEX       8 hex digits, no separators (e.g. C9136E8F). If
-#                      omitted, auto-detected over SSH from the ZGW log.
+#   --homeid HEX       8 hex digits, no separators (required;
+#                      e.g. C9136E8F).
 #   --cadence-s SEC    seconds between samples (default 10).
 #   --timeout-s SEC    per-sample resolve timeout in seconds (default 5;
 #                      fractional allowed, e.g. 2.5).
 #   --duration-s SEC   stop after this many seconds (default: run until
 #                      SIGINT/SIGTERM).
-#   --conf FILE        conf to source for ZGW_HOST/ZGW_USER (used only for
-#                      HomeID auto-detect). Default: ../conf next to this
-#                      script's test dir.
 #
 # CSV columns: sample_iso,recv_iso,latency_s,hostname,address,status
 #   status: ok | fail | timeout
@@ -43,7 +40,6 @@ HOMEID=""
 CADENCE_S=10
 TIMEOUT_S=5
 DURATION_S=""
-CONF=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -52,7 +48,6 @@ while [ $# -gt 0 ]; do
     --cadence-s)  CADENCE_S="${2:-}"; shift 2 ;;
     --timeout-s)  TIMEOUT_S="${2:-}"; shift 2 ;;
     --duration-s) DURATION_S="${2:-}"; shift 2 ;;
-    --conf)       CONF="${2:-}"; shift 2 ;;
     -h|--help)    usage 0 ;;
     *) echo "Unknown argument: $1" >&2; usage 2 ;;
   esac
@@ -63,48 +58,30 @@ if [ -z "${OUT}" ]; then
   usage 2
 fi
 
+if [ -z "${HOMEID}" ]; then
+  echo "Error: --homeid is required." >&2
+  usage 2
+fi
+
 if ! command -v avahi-resolve >/dev/null 2>&1; then
   echo "Error: avahi-resolve not found (install avahi-utils)." >&2
   exit 3
 fi
 
-# Resolve conf path for HomeID auto-detect (default: the test dir that
-# owns checks/, i.e. ../conf relative to this script).
-script_dir="$(cd "$(dirname "$0")" && pwd)"
-if [ -z "${CONF}" ]; then
-  CONF="$(cd "${script_dir}/.." && pwd)/conf"
-fi
-
-if [ -z "${HOMEID}" ]; then
-  if [ ! -f "${CONF}" ]; then
-    echo "Error: no --homeid and conf not found at ${CONF} for auto-detect." >&2
-    exit 2
-  fi
-  # shellcheck source=/dev/null
-  source "${CONF}"
-  if [ -z "${ZGW_HOST:-}" ] || [ -z "${ZGW_USER:-}" ]; then
-    echo "Error: ZGW_HOST/ZGW_USER not set in ${CONF}; cannot auto-detect HomeID." >&2
-    exit 2
-  fi
-  echo "Auto-detecting HomeID from ${ZGW_USER}@${ZGW_HOST} ..." >&2
-  HOMEID=$(ssh -o BatchMode=yes -o ConnectTimeout=5 "${ZGW_USER}@${ZGW_HOST}" \
-    "grep -m1 HomeID /var/log/zipgateway.log 2>/dev/null | cut -f4 -d' '" || true)
-  HOMEID="${HOMEID//[![:alnum:]]/}"
-  if [ -z "${HOMEID}" ]; then
-    echo "Error: could not auto-detect HomeID from the ZGW log." >&2
-    echo "       pass --homeid HEX explicitly." >&2
-    exit 2
-  fi
-fi
-
 HOMEID_UC=$(echo "${HOMEID}" | tr '[:lower:]' '[:upper:]')
+if [[ ! "${HOMEID_UC}" =~ ^[0-9A-F]{8}$ ]]; then
+  echo "Error: --homeid must be exactly 8 hex digits (got '${HOMEID}')." >&2
+  exit 2
+fi
 # ZGW advertises its controller resource as zw<HomeID>0001.local.
 HOSTNAME_MDNS="zw${HOMEID_UC}0001.local"
 
 mkdir -p "$(dirname "${OUT}")"
 echo "sample_iso,recv_iso,latency_s,hostname,address,status" > "${OUT}"
 echo "ST-01 heartbeat -> ${OUT}" >&2
-echo "  target=${HOSTNAME_MDNS} cadence=${CADENCE_S}s timeout=${TIMEOUT_S}s duration=${DURATION_S:-until-signal}s" >&2
+duration_disp="until-signal"
+[ -n "${DURATION_S}" ] && duration_disp="${DURATION_S}s"
+echo "  target=${HOSTNAME_MDNS} cadence=${CADENCE_S}s timeout=${TIMEOUT_S}s duration=${duration_disp}" >&2
 
 samples=0
 oks=0

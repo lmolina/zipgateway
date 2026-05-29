@@ -77,4 +77,4 @@ HEARTBEAT_TIMEOUT_S=5
 #                            verify/adjust at the shakedown.
 ST01_MAX_TIMEOUT_STREAK=3
 ST01_MAX_TX_GAP_S=60
-ST01_TX_MARKER_RE="TRANSMIT_COMPLETE_OK|SendData(Bridge)?.*(OK|complete)"
+ST01_TX_MARKER_RE="TRANSMIT_COMPLETE_OK"

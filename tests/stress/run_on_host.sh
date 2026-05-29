@@ -11,20 +11,22 @@ shopt -s nullglob
 
 mydir=$(dirname "$0")
 source "${mydir}/conf"
-if [ -z "${RUN_LOGS_DIR:-}" ]; then
-  echo "Error: RUN_LOGS_DIR is not set." >&2
+if [ -z "${RUN_DIR:-}" ]; then
+  echo "Error: RUN_DIR is not set." >&2
   exit 1
 fi
-logs_dir="${RUN_LOGS_DIR}"
+STEP_DIR="${RUN_DIR}/07_run"
+export STEP_DIR
 source "${mydir}/utils.sh"
 
 bed_load "${BED_TSV}"
 
-mkdir -p "${logs_dir}"
+mkdir -p "${STEP_DIR}"
 trap clean_exit SIGINT
 trap launch_reference_client SIGCHLD
 
 sudo /etc/init.d/zipgateway stop
+sleep 10
 backups="/var/log/zipgateway-$(date +%Y%m%dT%H%M%S).old"
 sudo mkdir -p "${backups}"
 log_backups=( /var/log/ziprouter.serlog* /var/log/zipgateway.log* )
@@ -95,7 +97,6 @@ do
       case "${BED_ROLE[slot]}" in
         switch)    CMD="${SUPERVISION} ${SESSION}${SWITCH_BINARY_SET_ON}" ;;
         door_lock) CMD="${SUPERVISION} ${SESSION}${DOOR_LOCK_CONFIGURATION_GET}" ;;
-        pir)       CMD="${SUPERVISION} ${SESSION}${PIR_LOCK_CONFIGURATION_GET}" ;;
         *)         continue ;;
       esac
       end_node=$(bed_node_uri "${slot}" "${homeid}")
