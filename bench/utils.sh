@@ -3,16 +3,22 @@
 #
 # SPDX-License-Identifier: LicenseRef-MSLA
 
+JLINK_TELNET_TIMEOUT_S="${JLINK_TELNET_TIMEOUT_S:-10}"
+
 function power_on_board {
   local host="$1"
   local port=4902
+  local rc
   echo "Powering on board $host..."
-  {
-    sleep 1
-    echo "target go"
-    sleep 1
-  } | telnet "$host" $port 2>/dev/null | grep -q "OK"
-  if [ $? -eq 0 ]; then
+  if { sleep 1; echo "target go"; sleep 1; } \
+       | timeout "${JLINK_TELNET_TIMEOUT_S}" telnet "$host" $port 2>/dev/null \
+       | grep -q "OK"
+  then
+    rc=0
+  else
+    rc=${PIPESTATUS[2]}
+  fi
+  if [ "$rc" -eq 0 ]; then
     echo "Board $host powered on."
   else
     echo "Warning: Could not confirm power on for $host" >&2
@@ -22,13 +28,17 @@ function power_on_board {
 function power_off_board {
   local host="$1"
   local port=4902
+  local rc
   echo "Powering off board $host..."
-  {
-    sleep 1
-    echo "target halt"
-    sleep 1
-  } | telnet "$host" $port 2>/dev/null | grep -q "OK"
-  if [ $? -eq 0 ]; then
+  if { sleep 1; echo "target halt"; sleep 1; } \
+       | timeout "${JLINK_TELNET_TIMEOUT_S}" telnet "$host" $port 2>/dev/null \
+       | grep -q "OK"
+  then
+    rc=0
+  else
+    rc=${PIPESTATUS[2]}
+  fi
+  if [ "$rc" -eq 0 ]; then
     echo "Board $host halted."
   else
     echo "Warning: Could not confirm halted for $host" >&2
@@ -38,12 +48,17 @@ function power_off_board {
 function reset_board {
   local host="$1"
   local port=4902
+  local rc
   echo "Resetting board $host..."
-  {
-    sleep 1
-    echo "sys reset sys"
-    sleep 1
-  } | telnet "$host" $port 2>/dev/null | grep -q "OK"
+  if { sleep 1; echo "sys reset sys"; sleep 1; } \
+       | timeout "${JLINK_TELNET_TIMEOUT_S}" telnet "$host" $port 2>/dev/null \
+       | grep -q "OK"
+  then
+    rc=0
+  else
+    rc=${PIPESTATUS[2]}
+  fi
+  return "$rc"
 }
 
 function launch_reference_client {
@@ -53,7 +68,7 @@ function launch_reference_client {
   exec 3> >(
   while true;
   do
-    "${REFERENCE_CLIENT}" -g ${logs_dir}/reference_client.log -s ${ZipLanIp6} -p ${ZipPSK}
+    "${REFERENCE_CLIENT}" -g ${STEP_DIR}/reference_client.log -s ${ZipLanIp6} -p ${ZipPSK}
     sleep 1
   done
 )
@@ -65,9 +80,9 @@ function clean_exit {
   exec 3>&-
   wait
 
-  mkdir -p "${logs_dir}"
-  cp /var/log/zipgateway.log /var/log/ziprouter.serlog "${logs_dir}"
-  echo "End Time: $(date)" >> "${logs_dir}/end_time"
+  mkdir -p "${STEP_DIR}"
+  cp /var/log/zipgateway.log /var/log/ziprouter.serlog "${STEP_DIR}"
+  echo "End Time: $(date)" >> "${STEP_DIR}/end_time"
 
   echo "Bye ..."
 
@@ -318,13 +333,21 @@ bed_unique_artifact_urls() {
   done | sort -u
 }
 
-# Create run_<UTC>/ under test_dir on [test-controller] and the matching path
-# under ${ZGW_STAGE_DIR} on [zgw-host]. Sets RUN_NAME, RUN_DIR, RUN_REMOTE_DIR.
-run_dir_init() {
-  local test_dir="$1"
-  RUN_NAME="run_$(date -u +%Y%m%dT%H%M%SZ)"
-  RUN_DIR="${test_dir}/${RUN_NAME}"
-  RUN_REMOTE_DIR="${ZGW_STAGE_DIR}/${RUN_NAME}"
-  mkdir -p "${RUN_DIR}"
-  export RUN_NAME RUN_DIR RUN_REMOTE_DIR
+run_dir_attach() {
+  local path="${1:-}"
+  if [ -z "${path}" ]; then
+    echo "run_dir_attach: <run_dir> required" >&2
+    return 1
+  fi
+  if [ ! -d "${path}" ]; then
+    echo "run_dir_attach: run dir not found: ${path}" >&2
+    echo "                run ./00_init_test_run.sh first." >&2
+    return 1
+  fi
+  RUN_DIR="$(cd "${path}" && pwd)"
+  export RUN_DIR
+  if [ -n "${ZGW_STAGE_DIR:-}" ]; then
+    RUN_REMOTE_DIR="${ZGW_STAGE_DIR}/$(basename "${RUN_DIR}")"
+    export RUN_REMOTE_DIR
+  fi
 }
