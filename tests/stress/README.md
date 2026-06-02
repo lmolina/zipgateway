@@ -4,9 +4,9 @@
 # Stress test
 
 Burst load against the Z/IP Gateway with verdict checks running
-in parallel. Currently scoped to **ST-01 (NCP tx-queue lockup)**;
-additional stress tests will reuse this directory layout via more
-files under `checks/`.
+in parallel. Currently scoped to **ST-01 (NCP tx-queue lockup)** and
+**ST-02 (node false-dead events)**; additional stress tests will reuse
+this directory layout via more files under `checks/`.
 
 See `../../AGENTS.md` for hardware bed, host roles, and conventions.
 
@@ -30,8 +30,8 @@ setup, provisioning). This test owns its `conf` and `bed.tsv`
 | 4 | `[test-controller]` | `./04_provisioning.sh <run_dir>` (pulls logs into `<run_dir>/04_provisioning/`) |
 | 5 | manual              | power on devices one-by-one in node-id order |
 | 6 | `[zgw-host]`        | verify node IDs in `reference_client` |
-| 7 | `[test-controller]` | `./07_run.sh <run_dir>` (detects HomeID once from the ZGW log, runs the load, stops the probe, pulls logs, runs the analyzer; writes `<run_dir>/verdict.txt` + `summary.json` and exits 0=PASS/1=FAIL/2=INCONCLUSIVE) |
-| 8 | manual              | inspect `<run_dir>/verdict.txt`, `summary.json`, and pulled logs under `<run_dir>/07_run/` |
+| 7 | `[test-controller]` | `./07_run.sh <run_dir>` (actually run the test, the probes and the analysis) |
+| 8 | manual              | inspect the per-test verdicts `<run_dir>/*_verdict.txt` + `<run_dir>/*_summary.json` ) and pulled logs |
 
 ## Files in this directory
 
@@ -39,7 +39,7 @@ setup, provisioning). This test owns its `conf` and `bed.tsv`
 |------|------|
 | `00_init_test_run.sh` | mints `run_<UTC>/` (thin wrapper around `bench/init_test_run.sh`) |
 | `01_..04_*.sh` | Step drivers; each takes `<run_dir>` as `$1` and tees into `<run_dir>/<step>/console.log` |
-| `07_run.sh` | orchestrator: heartbeat probe + load driver + analyzer; exits with the ST-01 verdict code |
+| `07_run.sh` | orchestrator + analysis |
 | `run_on_host.sh` | stress burst loop on `[zgw-host]`; reads `RUN_DIR` from env, drives every end-device slot (>=16) each burst |
 | `conf` | Z/IP Gateway + stress-test parameters (sourced by all scripts; sets `BED_TSV` to the file next to it) |
 | `bed.tsv` | Per-device description for this test |

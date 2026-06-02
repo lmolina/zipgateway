@@ -78,3 +78,23 @@ HEARTBEAT_TIMEOUT_S=5
 ST01_MAX_TIMEOUT_STREAK=3
 ST01_MAX_TX_GAP_S=60
 ST01_TX_MARKER_RE="TRANSMIT_COMPLETE_OK"
+
+# ST-02 false-dead tailer
+#   ST02_EVENT_RE   grep -E regex failed-node log line.
+ST02_EVENT_RE="Node [0-9]+ is now failing"
+#   ST02_RECOVERY_RE grep -E regex recovery log line
+ST02_RECOVERY_RE="Node [0-9]+ is now ok"
+#   ST02_NODEID_RE  grep -oE regex contains the decimal node id;
+ST02_NODEID_RE="Node [0-9]+"
+#   ST02_PROBE_TIMEOUT_S  ping timeout (seconds). Under load, ZGW/radio
+#                         RTT can exceed 5 s; 30 s was validated
+ST02_PROBE_TIMEOUT_S=30
+#   ST02_SETTLE_S         delay before probing after an event (seconds).
+ST02_SETTLE_S=1
+#   ST02_RESOLVE_TIMEOUT_S  avahi-resolve timeout per node (seconds).
+ST02_RESOLVE_TIMEOUT_S=5
+#   ST02_RECOVERY_WINDOW_S  window after a failing event in which a 'now ok'
+ST02_RECOVERY_WINDOW_S=60
+#   ST02_MAX_FALSE_DEAD_PER_24H  FAIL if any node exceeds this many
+#                   false-dead events in any 24h window (spec: <= 1).
+ST02_MAX_FALSE_DEAD_PER_24H=1

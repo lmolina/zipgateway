@@ -19,21 +19,9 @@ Conventions:
 
 Checks:
 
-| File | Test | Signal | Status |
-|------|------|--------|--------|
-| `st01_heartbeat.sh` | ST-01 | mDNS (`avahi-resolve`) liveness probe of ZGW from `[test-controller]`; one timestamped CSV row per sample, `status` in {ok,fail,timeout} | done |
-| `st01_analyze.sh`   | ST-01 | post-run: heartbeat-timeout streak (reliable) + ZGW-log tx-marker gap (corroborating) -> `verdict.txt` + `summary.json` | done |
-
-`st01_heartbeat.sh` is standalone-runnable (`--out FILE --homeid HEX
-[--cadence-s S] [--timeout-s S] [--duration-s S]`).
-
-`st01_analyze.sh` is standalone-runnable (`--run-dir DIR [--conf FILE]`).
-It locates the heartbeat CSV and `zipgateway.log` under the run folder,
-applies a strict verdict (both signals must agree for PASS), and exits
-0=PASS / 1=FAIL / 2=INCONCLUSIVE. Thresholds and the (version-coupled)
-tx-marker regex are configurable in `tests/stress/conf`
-(`ST01_MAX_TIMEOUT_STREAK`, `ST01_MAX_TX_GAP_S`, `ST01_TX_MARKER_RE`);
-verify the regex against a real ZGW log at the shakedown.
-
-`tests/stress/07_run.sh` starts the heartbeat in the background
-before the load loop and calls the analyzer once the load stops.
+| File | Test | Signal |
+|------|------|--------|
+| `st01_heartbeat.sh` | ST-01 | mDNS (`avahi-resolve`) liveness probe of ZGW from `[test-controller]`; one timestamped CSV row per sample, `status` in {ok,fail,timeout} |
+| `st01_analyze.sh`   | ST-01 | post-run: heartbeat-timeout streak (reliable) + ZGW-log tx-marker gap (corroborating) -> `verdict.txt` + `summary.json` |
+| `st02_tailer.sh`    | ST-02 | live tail of remote ZGW log; on `Node N is now failing`, mDNS resolve `zw<HomeID><NNNN>.local` then ping (default is 30s timeout); CSV row per event |
+| `st02_analyze.sh`   | ST-02 | post-run wrapper: runs `st02_bucket.awk` |

@@ -6,13 +6,11 @@
 # Run from [test-controller]:
 # 1. Stages run_on_host.sh + utils.sh + conf + bed.tsv on [zgw-host]
 # 2. Detects HomeID once from the ZGW log on [zgw-host]
-# 3. Starts the ST-01 heartbeat probe locally (checks/st01_heartbeat.sh),
-#    sampling ZGW liveness into ${STEP_DIR} while the load runs
+# 3. Starts probes locally (checks/),
 # 4. Runs the stress burst loop over SSH with a PTY (so CTRL+C reaches
 #    the worker)
-# 5. Stops the heartbeat, pulls back ${STEP_REMOTE_DIR}/, then runs the
-#    analyzer (checks/st01_analyze.sh) which scans ${RUN_DIR} and writes
-#    verdict.txt + summary.json at the run root.
+# 5. Stops the probes, pulls back ${STEP_REMOTE_DIR}/, then analyzes
+#    and writes verdict.txt + summary.json at the run root.
 #
 # The driver's own exit code mirrors the analyzer verdict
 # (0=PASS, 1=FAIL, 2=INCONCLUSIVE) so CI / callers can gate on it.
@@ -103,7 +101,6 @@ rsync -a \
   "${TEST_DIR}/conf" \
   "${ssh_target}:${ZGW_STAGE_DIR}/"
 
-# Start the ST-01 heartbeat probe locally (samples while the load runs)
 heartbeat_csv="${STEP_DIR}/st01_heartbeat.csv"
 heartbeat_pid=""
 echo "Starting ST-01 heartbeat probe -> ${heartbeat_csv} ..."
@@ -114,14 +111,52 @@ echo "Starting ST-01 heartbeat probe -> ${heartbeat_csv} ..."
   --timeout-s "${HEARTBEAT_TIMEOUT_S:-5}" &
 heartbeat_pid=$!
 
-stop_heartbeat() {
+tailer_csv="${STEP_DIR}/st02_events.csv"
+tailer_pid=""
+echo "Starting ST-02 false-dead tailer -> ${tailer_csv} ..."
+# setsid: stop_probes can signal the whole session (ssh tail, grep, probes).
+setsid "${TEST_DIR}/checks/st02_tailer.sh" \
+  --out "${tailer_csv}" \
+  --homeid "${homeid}" \
+  --ssh-target "${ssh_target}" \
+  --event-re "${ST02_EVENT_RE:-Node [0-9]+ is now failing}" \
+  --nodeid-re "${ST02_NODEID_RE:-Node [0-9]+}" \
+  --resolve-timeout-s "${ST02_RESOLVE_TIMEOUT_S:-5}" \
+  --probe-timeout-s "${ST02_PROBE_TIMEOUT_S:-30}" \
+  --settle-s "${ST02_SETTLE_S:-1}" &
+tailer_pid=$!
+
+wait_pid() {
+  local pid="$1"
+  local max_s="${2:-8}"
+  local i=0
+  while [ "${i}" -lt "${max_s}" ] && kill -0 "${pid}" 2>/dev/null; do
+    sleep 1
+    i=$((i + 1))
+  done
+  if kill -0 "${pid}" 2>/dev/null; then
+    kill -KILL "${pid}" 2>/dev/null || true
+  fi
+  wait "${pid}" 2>/dev/null || true
+}
+
+probes_stopped=0
+stop_probes() {
+  [ "${probes_stopped}" -eq 1 ] && return
+  probes_stopped=1
+
   if [ -n "${heartbeat_pid}" ] && kill -0 "${heartbeat_pid}" 2>/dev/null; then
     echo "Stopping heartbeat probe (pid ${heartbeat_pid}) ..."
     kill -TERM "${heartbeat_pid}" 2>/dev/null || true
-    wait "${heartbeat_pid}" 2>/dev/null || true
+    wait_pid "${heartbeat_pid}" 5
+  fi
+  if [ -n "${tailer_pid}" ] && kill -0 "${tailer_pid}" 2>/dev/null; then
+    echo "Stopping false-dead tailer (pid ${tailer_pid}) ..."
+    kill -TERM -"${tailer_pid}" 2>/dev/null || true
+    wait_pid "${tailer_pid}" 5
   fi
 }
-trap stop_heartbeat EXIT
+trap stop_probes EXIT
 
 echo "Running run_on_host.sh on ${ZGW_HOST} (CTRL+C to stop) ..."
 # -tt forces a PTY so CTRL+C from this terminal reaches the worker.
@@ -129,7 +164,7 @@ echo "Running run_on_host.sh on ${ZGW_HOST} (CTRL+C to stop) ..."
 ssh -tt "${ssh_opts[@]}" "${ssh_target}" \
   "cd '${ZGW_STAGE_DIR}' && sudo RUN_DIR='${RUN_REMOTE_DIR}' bash run_on_host.sh" || true
 
-stop_heartbeat
+stop_probes
 trap - EXIT
 
 echo "Pulling logs back to ${STEP_DIR}/ ..."
@@ -137,10 +172,20 @@ rsync -a \
   "${ssh_target}:${STEP_REMOTE_DIR}/" \
   "${STEP_DIR}/"
 
-echo "Analyzing run -> verdict ..."
-analyzer_code=0
+echo "Analyzing run -> ST-01 verdict ..."
+st01_code=0
 "${TEST_DIR}/checks/st01_analyze.sh" --run-dir "${RUN_DIR}" --conf "${TEST_DIR}/conf" \
-  || analyzer_code=$?
+  || st01_code=$?
 
-echo "Run complete. Verdict artifacts in ${RUN_DIR}/ (verdict.txt, summary.json)."
-exit "${analyzer_code}"
+echo "Analyzing run -> ST-02 verdict ..."
+st02_code=0
+"${TEST_DIR}/checks/st02_analyze.sh" --run-dir "${RUN_DIR}" --conf "${TEST_DIR}/conf" \
+  || st02_code=$?
+
+run_code="${st01_code}"
+[ "${st02_code}" -gt "${run_code}" ] && run_code="${st02_code}"
+
+echo "Run complete. Verdict artifacts in ${RUN_DIR}/:"
+echo "  ST-01: verdict.txt, summary.json (exit ${st01_code})"
+echo "  ST-02: st02_verdict.txt, st02_summary.json (exit ${st02_code})"
+exit "${run_code}"
