@@ -19,7 +19,8 @@ cd tests/stress
 Shared bring-up lives in `../../bench/` (utils, fetch, flash, ZGW
 setup, provisioning). This test owns its `conf` and `bed.tsv`
 
-
+Important note: create `conf` and `bed.tsv` files, i.e., `cp conf.template
+./conf && cp bed.tsv.template bed.tsv`
 
 | # | Where               | Action                                                                            |
 |---|---------------------|-----------------------------------------------------------------------------------|
