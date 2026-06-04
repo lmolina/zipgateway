@@ -44,6 +44,18 @@ SWITCH_BINARY_SET_OFF="0425010000"
 DOOR_LOCK_CONFIGURATION_GET="6205"
 PIR_LOCK_CONFIGURATION_GET="6205"
 
+# -- Step 05 automated SmartStart inclusion -----------------------------------
+# See tests/endurance/conf for the full FSM contract; the two tests share the
+# same inclusion driver and knobs.
+LOG_PATH="/var/log/zipgateway.log"
+INCLUSION_START_RE="nm_fsm_post_event event: NM_EV_ADD_END_NODE state: NM_NODE_FOUND"
+INCLUSION_DONE_RE="Probe of node [0-9]+ is done"
+INCLUSION_NODEID_RE="Probe of node [0-9]+ is done"
+INCLUSION_START_TIMEOUT_S=30
+INCLUSION_DONE_TIMEOUT_S=120
+INCLUSION_SETTLE_OFF_S=2
+INCLUSION_MAX_RETRIES=3
+
 # Burst knobs for the ST-01 stress loop (run_on_host.sh). These are the
 # primary levers for NCP tx-queue pressure; tune them during the T8
 # shakedown if the bed does not reproduce the lockup.

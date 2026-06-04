@@ -26,13 +26,14 @@ helpers from `${0%/*}/utils.sh`. The thin wrappers under
 
 | File | Role |
 |------|------|
-| `utils.sh` | `bed_load`, board power helpers, artifact path helpers, `run_dir_attach` |
+| `utils.sh` | `bed_load`, board power helpers, artifact path helpers, `run_dir_attach`, `bed_node_uri` |
 | `init_test_run.sh` | step 00: `mkdir` the run folder (fails if it exists), drop a manifest |
 | `fetch_artifacts.sh` | wget unique URLs from `${TEST_DIR}/bed.tsv` into repo-root `artifacts/` |
 | `prepare_boards.sh` | flash boards, write `artifacts/dsks`, power off |
 | `setup_zipgateway.sh` | rsync ZGW `.deb` to `[zgw-host]`, cleanup, reinstall, reboot |
 | `provisioning.sh` | SSH driver: stage workers + dsks, run SmartStart, pull logs into `${STEP_DIR}` |
 | `provision_on_host.sh` | SmartStart worker on `[zgw-host]`; invoked by `provisioning.sh` |
+| `inclusion.sh` | step 05 driver: power-cycle each device in slot order |
 | `zgw_cleanup.sh` | purge/reinstall ZGW on `[zgw-host]` |
 | `power_off_all_boards.sh` | manual recovery: power off every slot in `${TEST_DIR}/bed.tsv` |
 

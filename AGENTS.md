@@ -56,13 +56,10 @@ tests/endurance/
   02_prepare_boards.sh     [test-controller]  -> bench/prepare_boards.sh
   03_setup_zipgateway.sh   [test-controller]  -> bench/setup_zipgateway.sh
   04_provisioning.sh       [test-controller]  -> bench/provisioning.sh
+  05_inclusion.sh          [test-controller]  -> bench/inclusion.sh
   07_run.sh                [test-controller]  endurance load (stages run_on_host.sh)
 ```
 
-Steps 05 and 06 require human intervention to trigger SmartStart inclusion
-by powering on each device sequentially and verifying that the device is
-included with the expected node ID. Verification can be done via
-`reference_client` or a Zniffer.
 
 `03_setup_zipgateway.sh` requires SSH key-based access plus passwordless
 `sudo` for `${ZGW_USER}` on `[zgw-host]`. It is the only sanctioned way
@@ -84,7 +81,7 @@ zgw-host workers:
 Workers receive `RUN_DIR` over SSH and compute their own `STEP_DIR`,
 identical to controller scripts. Step subfolder names match the script
 basename: `01_fetch_artifacts`, `02_prepare_boards`, `03_setup_zipgateway`,
-`04_provisioning`, `07_run`. Stress verdict files (`verdict.txt`,
+`04_provisioning`, `05_inclusion`, `07_run`. Stress verdict files (`verdict.txt`,
 `summary.json`) sit at the run root because the verdict is for the whole
 test run, not a single step.
 
