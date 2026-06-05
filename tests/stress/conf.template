@@ -125,3 +125,16 @@ ZIP_PROBE_TIMEOUT_S=5
 #                                    SerialAPI ASSERT() failures.
 #   "SIGSEGV" / "core dumped" -- process-abort evidence from the host.
 ST03_FATAL_RE="Fatal error|Assertion failed|ASSERT|SIGSEGV|core dumped"
+
+# ST-04 process sampler (checks/st04_process_sampler.sh).
+#   ST04_SAMPLE_CADENCE_S       seconds between zipgateway process samples
+ST04_SAMPLE_CADENCE_S=60
+# ST-04 analyzer (checks/st04_analyze.sh).
+#   ST04_CPU_ROLLING_WINDOW_S   rolling-average window over cpu_pct samples
+ST04_CPU_ROLLING_WINDOW_S=300
+#   ST04_CPU_MAX_PCT            FAIL if any rolling-average sample exceeds
+#                               this CPU%
+ST04_CPU_MAX_PCT=80
+#   ST04_RSS_SLOPE_MAX_KIB_PER_H FAIL if the fitted RSS slope exceeds this
+#                               threshold (KiB/hour).
+ST04_RSS_SLOPE_MAX_KIB_PER_H=300

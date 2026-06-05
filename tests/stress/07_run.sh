@@ -24,7 +24,8 @@ if [ $# -lt 1 ]; then
   exit 2
 fi
 
-export TEST_DIR="$(cd "$(dirname "$0")" && pwd)"
+TEST_DIR="$(cd "$(dirname "$0")" && pwd)"
+export TEST_DIR
 BENCH_DIR="$(cd "${TEST_DIR}/../../bench" && pwd)"
 
 if [ ! -f "${TEST_DIR}/conf" ]; then
@@ -32,9 +33,9 @@ if [ ! -f "${TEST_DIR}/conf" ]; then
   exit 1
 fi
 
-# shellcheck source=conf
+# shellcheck source=/dev/null
 source "${TEST_DIR}/conf"
-# shellcheck source=../../bench/utils.sh
+# shellcheck source=/dev/null
 source "${BENCH_DIR}/utils.sh"
 
 vars=(ZGW_HOST ZGW_USER ZGW_STAGE_DIR LOCATION REFERENCE_CLIENT TEST_DURATION)
@@ -68,6 +69,7 @@ if ! ssh "${ssh_opts[@]}" "${ssh_target}" true; then
 fi
 
 echo "Checking reference_client at ${REFERENCE_CLIENT} ..."
+# shellcheck disable=SC2029
 if ! ssh "${ssh_opts[@]}" "${ssh_target}" \
     "test -x '${REFERENCE_CLIENT}'"; then
   echo "Error: ${REFERENCE_CLIENT} missing on ${ZGW_HOST}." >&2
@@ -89,13 +91,17 @@ echo "Detected HomeID: ${homeid}"
 printf "%s\n" "${homeid}" > "${STEP_DIR}/st01_homeid.txt"
 
 echo "Staging run_on_host.sh on ${ZGW_HOST}:${ZGW_STAGE_DIR} ..."
-ssh "${ssh_opts[@]}" "${ssh_target}" "mkdir -p '${ZGW_STAGE_DIR}' '${STEP_REMOTE_DIR}'"
+# shellcheck disable=SC2029
+ssh "${ssh_opts[@]}" "${ssh_target}" "mkdir -p '${ZGW_STAGE_DIR}' '${ZGW_STAGE_DIR}/checks' '${STEP_REMOTE_DIR}'"
 rsync -a \
   "${TEST_DIR}/run_on_host.sh" \
   "${BENCH_DIR}/utils.sh" \
   "${TEST_DIR}/bed.tsv" \
   "${TEST_DIR}/conf" \
   "${ssh_target}:${ZGW_STAGE_DIR}/"
+rsync -a \
+  "${TEST_DIR}/checks/st04_process_sampler.sh" \
+  "${ssh_target}:${ZGW_STAGE_DIR}/checks/"
 
 heartbeat_csv="${STEP_DIR}/st01_heartbeat.csv"
 heartbeat_pid=""
@@ -198,12 +204,19 @@ st03_code=0
 "${TEST_DIR}/checks/st03_analyze.sh" --run-dir "${RUN_DIR}" --conf "${TEST_DIR}/conf" \
   || st03_code=$?
 
+echo "Analyzing run -> ST-04 verdict ..."
+st04_code=0
+"${TEST_DIR}/checks/st04_analyze.sh" --run-dir "${RUN_DIR}" --conf "${TEST_DIR}/conf" \
+  || st04_code=$?
+
 run_code="${st01_code}"
 [ "${st02_code}" -gt "${run_code}" ] && run_code="${st02_code}"
 [ "${st03_code}" -gt "${run_code}" ] && run_code="${st03_code}"
+[ "${st04_code}" -gt "${run_code}" ] && run_code="${st04_code}"
 
 echo "Run complete. Verdict artifacts in ${RUN_DIR}/:"
 echo "  ST-01: verdict.txt, summary.json (exit ${st01_code})"
 echo "  ST-02: st02_verdict.txt, st02_summary.json (exit ${st02_code})"
 echo "  ST-03: st03_verdict.txt, st03_summary.json (exit ${st03_code})"
+echo "  ST-04: st04_verdict.txt, st04_summary.json (exit ${st04_code})"
 exit "${run_code}"

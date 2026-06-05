@@ -5,9 +5,9 @@
 
 Burst load against the Z/IP Gateway with verdict checks running
 in parallel. Currently scoped to **ST-01 (NCP tx-queue lockup)**,
-**ST-02 (node false-dead events)**, and **ST-03 (ZGW operational)**;
-additional stress tests will reuse this directory layout via more
-files under `checks/`.
+**ST-02 (node false-dead events)**, **ST-03 (ZGW operational)**,
+and **ST-04 (ZGW memory / CPU)**; additional stress tests will reuse
+this directory layout via more files under `checks/`.
 
 See `../../AGENTS.md` for hardware bed, host roles, and conventions.
 
@@ -32,7 +32,7 @@ Important note: create `conf` and `bed.tsv` files, i.e., `cp conf.template
 | 4 | `[test-controller]` | `./04_provisioning.sh <run_dir>` loads the SmartStart provisioning list |
 | 5 | `[test-controller]` | `./05_inclusion.sh <run_dir>` power-cycles each end device in slot order |
 | 7 | `[test-controller]` | `./07_run.sh <run_dir>` (actually run the test, the probes and the analysis) |
-| 8 | manual              | inspect the per-test verdicts `<run_dir>/*_verdict.txt` + `<run_dir>/*_summary.json` ) and pulled logs |
+| 8 | manual              | inspect the per-test verdicts `<run_dir>/*_verdict.txt` + `<run_dir>/*_summary.json` and pulled logs |
 
 ## Files in this directory
 

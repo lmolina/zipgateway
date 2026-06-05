@@ -23,13 +23,25 @@ bed_load "${BED_TSV}"
 
 mkdir -p "${STEP_DIR}"
 
-# ST-03: capture end PID at both clean_exit call sites (SIGINT + duration).
-st03_clean_exit() {
+# ST-03/ST-04: capture end PID and stop the remote process sampler at both
+# clean_exit call sites (SIGINT + duration).
+st04_sampler_pid=""
+stop_st04_sampler() {
+  if [ -n "${st04_sampler_pid}" ] && kill -0 "${st04_sampler_pid}" 2>/dev/null; then
+    echo "Stopping ST-04 process sampler (pid ${st04_sampler_pid}) ..."
+    kill -TERM "${st04_sampler_pid}" 2>/dev/null || true
+    wait "${st04_sampler_pid}" 2>/dev/null || true
+  fi
+}
+
+stress_clean_exit() {
   pgrep -x zipgateway | head -n1 > "${STEP_DIR}/st03_pid_end.txt" || true
+  stop_st04_sampler
   clean_exit
 }
 
-trap st03_clean_exit SIGINT
+trap stress_clean_exit SIGINT
+trap stop_st04_sampler EXIT
 trap launch_reference_client SIGCHLD
 
 sudo /etc/init.d/zipgateway stop
@@ -54,6 +66,20 @@ if [ -z "${ZGW_PID_START}" ]; then
   exit 1
 fi
 printf "%s\n" "${ZGW_PID_START}" > "${STEP_DIR}/st03_pid_start.txt"
+
+st04_sampler_script="${mydir}/checks/st04_process_sampler.sh"
+if [ ! -x "${st04_sampler_script}" ]; then
+  echo "Error: ST-04 sampler missing or not executable: ${st04_sampler_script}" >&2
+  exit 1
+fi
+
+st04_process_csv="${STEP_DIR}/st04_process.csv"
+echo "Starting ST-04 process sampler -> ${st04_process_csv}"
+"${st04_sampler_script}" \
+  --out "${st04_process_csv}" \
+  --process-name "zipgateway" \
+  --cadence-s "${ST04_SAMPLE_CADENCE_S:-60}" &
+st04_sampler_pid=$!
 
 launch_reference_client
 
@@ -129,4 +155,4 @@ do
 done
 
 echo "TEST_DURATION elapsed; shutting down."
-st03_clean_exit
+stress_clean_exit
