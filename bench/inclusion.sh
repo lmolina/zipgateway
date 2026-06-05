@@ -149,8 +149,8 @@ included_list=$(ssh "${ssh_opts[@]}" "${ssh_target}" \
 node_already_included() {
   local slot="$1" hid="$2" uri
   [ -n "${included_list}" ] || return 1
-  uri="$(bed_node_uri "${slot}" "${hid}")"
-  printf '%s\n' "${included_list}" | grep -Fiq "${uri}"
+  uri="dut-${slot}.${LOCATION} [${hid}"
+  printf '%s\n' "${included_list}" | grep -Fi "${uri}"
 }
 
 # -- operator prompt ---------------------------------------------------------
