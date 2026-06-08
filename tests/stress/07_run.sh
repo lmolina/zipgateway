@@ -57,6 +57,7 @@ STEP_NAME="07_run"
 STEP_DIR="${RUN_DIR}/${STEP_NAME}"
 STEP_REMOTE_DIR="${RUN_REMOTE_DIR}/${STEP_NAME}"
 mkdir -p "${STEP_DIR}"
+exec > >(tee -a "${STEP_DIR}/console.log") 2>&1
 echo "Run output: ${STEP_DIR}"
 
 ssh_target="${ZGW_USER}@${ZGW_HOST}"
