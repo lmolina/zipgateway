@@ -26,6 +26,7 @@ mkdir -p "${STEP_DIR}"
 # ST-03/ST-04: capture end PID and stop the remote process sampler at both
 # clean_exit call sites (SIGINT + duration).
 st04_sampler_pid=""
+STRESS_CLEAN_EXIT_RUNNING=0
 stop_st04_sampler() {
   if [ -n "${st04_sampler_pid}" ] && kill -0 "${st04_sampler_pid}" 2>/dev/null; then
     echo "Stopping ST-04 process sampler (pid ${st04_sampler_pid}) ..."
@@ -35,14 +36,18 @@ stop_st04_sampler() {
 }
 
 stress_clean_exit() {
+  if [ "${STRESS_CLEAN_EXIT_RUNNING}" -eq 1 ]; then
+    return 0
+  fi
+  STRESS_CLEAN_EXIT_RUNNING=1
+  trap - EXIT HUP INT TERM
+
   pgrep -x zipgateway | head -n1 > "${STEP_DIR}/st03_pid_end.txt" || true
   stop_st04_sampler
   clean_exit
 }
 
-trap stress_clean_exit SIGINT
-trap stop_st04_sampler EXIT
-trap launch_reference_client SIGCHLD
+trap stress_clean_exit EXIT HUP INT TERM
 
 sudo /etc/init.d/zipgateway stop
 sleep 10

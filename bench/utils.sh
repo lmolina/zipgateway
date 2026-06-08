@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: LicenseRef-MSLA
 
 JLINK_TELNET_TIMEOUT_S="${JLINK_TELNET_TIMEOUT_S:-10}"
+REFERENCE_CLIENT_RELAY_PID=""
+CLEAN_EXIT_RUNNING=0
 
 function power_on_board {
   local host="$1"
@@ -66,27 +68,37 @@ function launch_reference_client {
 
   # HACK: to re-launch the reference_client when it fails due to sigfault...
   exec 3> >(
+  set +e
   while true;
   do
     "${REFERENCE_CLIENT}" -g ${STEP_DIR}/reference_client.log -s ${ZipLanIp6} -p ${ZipPSK}
+    rc=$?
+    if [ "${rc}" -ne 0 ]; then
+      echo "Warning: reference_client exited with rc=${rc}; restarting in 1s" >&2
+    fi
     sleep 1
   done
 )
+  REFERENCE_CLIENT_RELAY_PID=$!
   sleep 1
 }
 
 function clean_exit {
+  if [ "${CLEAN_EXIT_RUNNING}" -eq 1 ]; then
+    return 0
+  fi
+  CLEAN_EXIT_RUNNING=1
+  trap - EXIT HUP INT TERM
+
   echo "Sutting down reference_client!"
   exec 3>&-
-  wait
+  wait_pid "${REFERENCE_CLIENT_RELAY_PID}" 5
 
   mkdir -p "${STEP_DIR}"
   cp /var/log/zipgateway.log /var/log/ziprouter.serlog "${STEP_DIR}"
   echo "End Time: $(date)" >> "${STEP_DIR}/end_time"
 
   echo "Bye ..."
-
-  kill 0
   exit 0
 }
 
@@ -350,4 +362,18 @@ run_dir_attach() {
     RUN_REMOTE_DIR="${ZGW_STAGE_DIR}/$(basename "${RUN_DIR}")"
     export RUN_REMOTE_DIR
   fi
+}
+
+wait_pid() {
+  local pid="$1"
+  local max_s="${2:-8}"
+  local i=0
+  while [ "${i}" -lt "${max_s}" ] && kill -0 "${pid}" 2>/dev/null; do
+    sleep 1
+    i=$((i + 1))
+  done
+  if kill -0 "${pid}" 2>/dev/null; then
+    kill -KILL "${pid}" 2>/dev/null || true
+  fi
+  wait "${pid}" 2>/dev/null || true
 }

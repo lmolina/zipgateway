@@ -22,8 +22,7 @@ source "${mydir}/utils.sh"
 bed_load "${BED_TSV}"
 
 mkdir -p "${STEP_DIR}"
-trap clean_exit SIGINT
-trap launch_reference_client SIGCHLD
+trap clean_exit EXIT HUP INT TERM
 
 sudo /etc/init.d/zipgateway stop
 sleep 10

@@ -138,20 +138,6 @@ echo "Starting ST-03 ZGW probe -> ${st03_probe_csv} ..."
   --timeout-s "${ZIP_PROBE_TIMEOUT_S:-5}" &
 st03_probe_pid=$!
 
-wait_pid() {
-  local pid="$1"
-  local max_s="${2:-8}"
-  local i=0
-  while [ "${i}" -lt "${max_s}" ] && kill -0 "${pid}" 2>/dev/null; do
-    sleep 1
-    i=$((i + 1))
-  done
-  if kill -0 "${pid}" 2>/dev/null; then
-    kill -KILL "${pid}" 2>/dev/null || true
-  fi
-  wait "${pid}" 2>/dev/null || true
-}
-
 probes_stopped=0
 stop_probes() {
   [ "${probes_stopped}" -eq 1 ] && return
