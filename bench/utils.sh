@@ -95,7 +95,18 @@ function clean_exit {
   wait_pid "${REFERENCE_CLIENT_RELAY_PID}" 5
 
   mkdir -p "${STEP_DIR}"
-  cp /var/log/zipgateway.log /var/log/ziprouter.serlog "${STEP_DIR}"
+  if [[ -f "/var/log/zipgateway.log" ]]; then
+    cp /var/log/zipgateway.log "${STEP_DIR}" || true
+  else
+    echo "/var/log/zipgateway.log not found"
+  fi
+
+  if [[ -f "/var/log/ziprouter.serlog" ]]; then
+    cp /var/log/ziprouter.serlog "${STEP_DIR}" || true
+  else
+    echo "/var/log/ziprouter.serlog  not found"
+  fi
+
   echo "End Time: $(date)" >> "${STEP_DIR}/end_time"
 
   echo "Bye ..."
