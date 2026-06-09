@@ -63,8 +63,8 @@ MAX_STREAK="${ST01_MAX_TIMEOUT_STREAK:-3}"
 MAX_TX_GAP_S="${ST01_MAX_TX_GAP_S:-60}"
 TX_MARKER_RE="${ST01_TX_MARKER_RE:-TRANSMIT_COMPLETE_OK}"
 
-VERDICT_TXT="${RUN_DIR}/verdict.txt"
-SUMMARY_JSON="${RUN_DIR}/summary.json"
+VERDICT_TXT="${RUN_DIR}/st01_verdict.txt"
+SUMMARY_JSON="${RUN_DIR}/st01_summary.json"
 
 hb_csv="${RUN_DIR}/07_run/st01_heartbeat.csv"
 zgw_log="${RUN_DIR}/07_run/zipgateway.log"
@@ -161,7 +161,6 @@ else
   verdict="PASS"; code=0
 fi
 
-# --- Emit verdict.txt ------------------------------------------------------
 {
   echo "ST-01 verdict: ${verdict}"
   echo "run_dir: ${RUN_DIR}"
@@ -185,7 +184,6 @@ fi
   fi
 } > "${VERDICT_TXT}"
 
-# --- Emit summary.json -----------------------------------------------------
 json_reasons=""
 for r in "${reasons[@]:-}"; do
   [ -z "${r}" ] && continue
