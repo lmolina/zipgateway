@@ -45,38 +45,94 @@ DOOR_LOCK_CONFIGURATION_GET="6205"
 PIR_LOCK_CONFIGURATION_GET="6205"
 
 # -- Step 05 automated SmartStart inclusion -----------------------------------
-# Drives end-device inclusion in slot order with a two-phase FSM:
-#   1. wait up to INCLUSION_START_TIMEOUT_S for INCLUSION_START_RE
-#      (SmartStart actually began for *some* device);
-#   2. then wait up to INCLUSION_DONE_TIMEOUT_S for INCLUSION_DONE_RE
-#      (resource-directory probe completed) and check the node id.
-#
-# ZGW log on [zgw-host]. Tailed over SSH from [test-controller].
+# See tests/endurance/conf for the full FSM contract; the two tests share the
+# same inclusion driver and knobs.
 LOG_PATH="/var/log/zipgateway.log"
-#   INCLUSION_START_RE    SmartStart actually began. Required. Source:
-#                         CC_NetworkManagement.c FSM transition for the add.
 INCLUSION_START_RE="nm_fsm_post_event event: NM_EV_ADD_END_NODE state: NM_NODE_FOUND"
-#   INCLUSION_DONE_RE     resource-directory probe completion. Required.
-#                         Source: ResourceDirectory.c "Probe of node %d is done".
 INCLUSION_DONE_RE="Probe of node [0-9]+ is done"
-#   INCLUSION_NODEID_RE   capture the decimal node id on the DONE line.
-#                         Compared against slot + 4. Required.
 INCLUSION_NODEID_RE="Probe of node [0-9]+ is done"
-#   INCLUSION_START_TIMEOUT_S  wait for START after power-on, per attempt.
-#                         If we never see it, the board never primed.
 INCLUSION_START_TIMEOUT_S=30
-#   INCLUSION_DONE_TIMEOUT_S   wait for DONE after START, per attempt.
-#                         Covers S2 bootstrap + probe.
 INCLUSION_DONE_TIMEOUT_S=120
-#   INCLUSION_SETTLE_OFF_S  delay between power_off and power_on (seconds).
 INCLUSION_SETTLE_OFF_S=2
-#   INCLUSION_MAX_RETRIES  power-cycle retries before the operator prompt.
 INCLUSION_MAX_RETRIES=3
 
-BURST_SIZE=4
-BURST_SLEEP=32
+# Burst knobs for the ET-01 endurance loop (run_on_host.sh).
+#   BURST_SIZE  frames per device per burst window
+#   SEND_SLEEP  pause between individual sends inside a burst (seconds)
+#   BURST_SLEEP idle gap between burst windows (seconds)
+BURST_SIZE=1
+SEND_SLEEP=0.15
+BURST_SLEEP=120
 
 # Soft stop for the burst loop in run_on_host.sh. Format:
 # <integer>[s|m|h|d] (e.g. 72h, 30m, 3d, 259200). Bare integer = seconds.
 # CTRL+C remains the hard stop.
-TEST_DURATION="72h"
+# Endurance reference run from the spec: 7 days.
+TEST_DURATION="7d"
+
+# ST-01 heartbeat probe (checks/st01_heartbeat.sh).
+#   HEARTBEAT_CADENCE_S   seconds between mDNS liveness samples
+#   HEARTBEAT_TIMEOUT_S   per-sample avahi-resolve timeout (seconds)
+HEARTBEAT_CADENCE_S=30
+HEARTBEAT_TIMEOUT_S=5
+
+# ST-01 analyzer (checks/st01_analyze.sh) verdict thresholds.
+#   ST01_MAX_TIMEOUT_STREAK  FAIL if >= this many consecutive heartbeat
+#                            timeouts (3 @ 10s cadence ~= a 30s wedge).
+#   ST01_MAX_TX_GAP_S        corroborating: flag if the ZGW log shows no
+#                            tx-complete marker for longer than this while
+#                            the run was active.
+#   ST01_TX_MARKER_RE        grep -E regex for a successful NCP transmit in
+#                            the ZGW log. Wording is ZGW-version coupled;
+#                            verify/adjust at the shakedown.
+ST01_MAX_TIMEOUT_STREAK=3
+ST01_MAX_TX_GAP_S=300
+ST01_TX_MARKER_RE="TRANSMIT_COMPLETE_OK"
+
+# ST-02 false-dead tailer
+#   ST02_EVENT_RE   grep -E regex failed-node log line.
+ST02_EVENT_RE="Node [0-9]+ is now failing"
+#   ST02_RECOVERY_RE grep -E regex recovery log line
+ST02_RECOVERY_RE="Node [0-9]+ is now ok"
+#   ST02_NODEID_RE  grep -oE regex contains the decimal node id;
+ST02_NODEID_RE="Node [0-9]+"
+#   ST02_PROBE_TIMEOUT_S  ping timeout (seconds). Under load, ZGW/radio
+#                         RTT can exceed 5 s; 30 s was validated
+ST02_PROBE_TIMEOUT_S=30
+#   ST02_SETTLE_S         delay before probing after an event (seconds).
+ST02_SETTLE_S=1
+#   ST02_RESOLVE_TIMEOUT_S  avahi-resolve timeout per node (seconds).
+ST02_RESOLVE_TIMEOUT_S=5
+#   ST02_RECOVERY_WINDOW_S  window after a failing event in which a 'now ok'
+ST02_RECOVERY_WINDOW_S=60
+#   ST02_MAX_FALSE_DEAD_PER_24H  FAIL if any node exceeds this many
+#                   false-dead events in any 24h window (spec: <= 1).
+ST02_MAX_FALSE_DEAD_PER_24H=1
+
+# ST-03 ZGW operational probe (checks/st03_zgw_probe.sh).
+#   ZIP_PROBE_CADENCE_S    seconds between ZGW liveness probes
+ZIP_PROBE_CADENCE_S=60
+#   ZIP_PROBE_TIMEOUT_S    per-sample resolve timeout in seconds
+ZIP_PROBE_TIMEOUT_S=5
+
+# ST-03 analyzer (checks/st03_analyze.sh).
+# ST03_FATAL_RE: grep -E pattern. From the zipgateway codebase:
+#   "Fatal error"              -- ERR_PRINTF in src/ZIP_Router.c (Router
+#                                 reset failure; posts PROCESS_EVENT_EXIT).
+#   "Assertion failed" / "ASSERT" -- contiki assert()/ASSERT() and
+#                                    SerialAPI ASSERT() failures.
+#   "SIGSEGV" / "core dumped" -- process-abort evidence from the host.
+ST03_FATAL_RE="Fatal error|Assertion failed|ASSERT|SIGSEGV|core dumped"
+
+# ST-04 process sampler (checks/st04_process_sampler.sh).
+#   ST04_SAMPLE_CADENCE_S       seconds between zipgateway process samples
+ST04_SAMPLE_CADENCE_S=60
+# ST-04 analyzer (checks/st04_analyze.sh).
+#   ST04_CPU_ROLLING_WINDOW_S   rolling-average window over cpu_pct samples
+ST04_CPU_ROLLING_WINDOW_S=300
+#   ST04_CPU_MAX_PCT            FAIL if any rolling-average sample exceeds
+#                               this CPU%
+ST04_CPU_MAX_PCT=80
+#   ST04_RSS_SLOPE_MAX_KIB_PER_H FAIL if the fitted RSS slope exceeds this
+#                               threshold (KiB/hour).
+ST04_RSS_SLOPE_MAX_KIB_PER_H=300

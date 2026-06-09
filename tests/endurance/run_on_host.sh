@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: LicenseRef-MSLA
 #
-# Endurance burst loop for ST-01 (NCP tx-queue lockup). Runs on [zgw-host],
+# Endurance burst loop for ET-01 (NCP tx-queue lockup). Runs on [zgw-host],
 # staged and invoked by 07_run.sh.
 
 set -euo pipefail

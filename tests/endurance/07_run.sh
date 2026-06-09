@@ -6,12 +6,12 @@
 # Run from [test-controller]:
 # 1. Stages run_on_host.sh + utils.sh + conf + bed.tsv on [zgw-host]
 # 2. Detects HomeID once from the ZGW log on [zgw-host]
-# 3. Starts the ST-01 heartbeat probe locally (checks/st01_heartbeat.sh),
+# 3. Starts the ET-01 heartbeat probe locally (checks/st01_heartbeat.sh),
 #    sampling ZGW liveness into ${STEP_DIR} while the load runs
-# 4. Runs the stress burst loop over SSH with a PTY (so CTRL+C reaches
+# 4. Runs the endurance burst loop over SSH with a PTY (so CTRL+C reaches
 #    the worker)
 # 5. Stops the heartbeat, pulls back ${STEP_REMOTE_DIR}/, then runs the
-#    analyzer (checks/st01_analyze.sh) which scans ${RUN_DIR} and writes
+#    ET-01 analyzer (checks/st01_analyze.sh) which scans ${RUN_DIR} and writes
 #    verdict.txt + summary.json at the run root.
 #
 # The driver's own exit code mirrors the analyzer verdict
@@ -104,11 +104,11 @@ rsync -a \
   "${TEST_DIR}/conf" \
   "${ssh_target}:${ZGW_STAGE_DIR}/"
 
-# Start the ST-01 heartbeat probe locally (samples while the load runs)
+# Start the ET-01 heartbeat probe locally (samples while the load runs)
 heartbeat_csv="${STEP_DIR}/st01_heartbeat.csv"
 heartbeat_pid=""
-echo "Starting ST-01 heartbeat probe -> ${heartbeat_csv} ..."
-"${TEST_DIR}/checks/st01_heartbeat.sh" \
+echo "Starting ET-01 heartbeat probe -> ${heartbeat_csv} ..."
+bash "${TEST_DIR}/checks/st01_heartbeat.sh" \
   --out "${heartbeat_csv}" \
   --homeid "${homeid}" \
   --cadence-s "${HEARTBEAT_CADENCE_S:-10}" \
@@ -138,10 +138,10 @@ rsync -a \
   "${ssh_target}:${STEP_REMOTE_DIR}/" \
   "${STEP_DIR}/"
 
-echo "Analyzing run -> verdict ..."
+echo "Analyzing run -> ET-01 verdict ..."
 analyzer_code=0
-"${TEST_DIR}/checks/st01_analyze.sh" --run-dir "${RUN_DIR}" --conf "${TEST_DIR}/conf" \
+bash "${TEST_DIR}/checks/st01_analyze.sh" --run-dir "${RUN_DIR}" --conf "${TEST_DIR}/conf" \
   || analyzer_code=$?
 
-echo "Run complete. Verdict artifacts in ${RUN_DIR}/ (verdict.txt, summary.json)."
+echo "Run complete. ET-01 verdict artifacts in ${RUN_DIR}/ (verdict.txt, summary.json)."
 exit "${analyzer_code}"
