@@ -9,7 +9,7 @@ ARTIFACTS_DIR="${TEST_ROOT}/artifacts"
 
 # RF region default. Used by zgw_cleanup.sh for ZWRFRegion= and as the
 # fallback for bed.tsv rows whose region column is '-'.
-REGION="0x01"
+REGION="0x09"
 
 # Firmware URLs live in bed.tsv; fetch_artifacts.sh downloads them into
 # ${ARTIFACTS_DIR}/ mirroring the Artifactory path.
@@ -20,7 +20,7 @@ REGION="0x01"
 # ${ZGW_STAGE_DIR} on the zgw-host.
 BED_TSV="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/bed.tsv"
 
-NL_WAKE_UP_INTERVAL_VALUE_SEC="000014"
+NL_WAKE_UP_INTERVAL_VALUE_SEC="000E10"
 
 ZGW_HOST=<ZGW_HOST>
 ZGW_USER=pi
