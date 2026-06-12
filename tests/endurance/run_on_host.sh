@@ -48,26 +48,30 @@ fi
 CONTROLLER="Static Controller [${homeid}-0001-000]"
 
 # Configure end devices from bed.tsv. For every end-device slot:
-#   1. PIR: queue WAKE_UP_INTERVAL_SET so the device pulls it on next wake.
-#   2. If the row carries a route, send PRIORITY_ROUTE_SET to the controller
-#      (then wait so the controller commits before the next frame).
+#   1. For every device, set up the association group 1 (lifeline) to the
+#      controller
+#   2. PIR: queue WAKE_UP_INTERVAL_SET so the device pulls it on next wake.
 #   3. PIR: reset_board so the device wakes and the gateway can deliver any
 #      queued frames before the burst loop starts.
+#   4. If the row carries a route, send PRIORITY_ROUTE_SET to the controller
+#      (then wait so the controller commits before the next frame).
 for slot in $(bed_iter_end_devices); do
   end_node=$(bed_node_uri "${slot}" "${homeid}")
 
+  echo "send \"${end_node}\" COMMAND_CLASS_ASSOCIATION ASSOCIATION_SET 0101" >&3
+
   if [ "${BED_ROLE[slot]}" = "pir" ]; then
     echo "send \"${end_node}\" COMMAND_CLASS_WAKE_UP WAKE_UP_INTERVAL_SET ${NL_WAKE_UP_INTERVAL_VALUE_SEC}01" >&3
+
+    reset_board "${BED_HOST[slot]}" \
+	    || ( sleep 2 && reset_board "${BED_HOST[slot]}" )\
+	    || echo "Warning: reset_board failed for ${BED_HOST[slot]}" >&2
   fi
+  sleep 2
 
   if [ -n "${BED_ROUTE[slot]}" ]; then
     echo "send \"${CONTROLLER}\" COMMAND_CLASS_NETWORK_MANAGEMENT_INSTALLATION_MAINTENANCE PRIORITY_ROUTE_SET ${BED_ROUTE[slot]}" >&3
     sleep 0.2
-  fi
-
-  if [ "${BED_ROLE[slot]}" = "pir" ]; then
-    reset_board "${BED_HOST[slot]}" \
-      || echo "Warning: reset_board failed for ${BED_HOST[slot]}" >&2
   fi
 done
 
@@ -107,7 +111,7 @@ do
   echo ""
   echo "$(date) CTRL+C to quit"
   echo ""
-  sleep ${BURST_SLEEP}
+  sleep "${BURST_SLEEP}"
 done
 
 echo "TEST_DURATION elapsed; shutting down."

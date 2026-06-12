@@ -63,6 +63,17 @@ function reset_board {
   return "$rc"
 }
 
+# Send a CLI command to a board's application UART (port 4901).
+# Usage: board_cli <jlink_host> <command> [timeout_s]
+function board_cli {
+  local host="$1"
+  local cmd="$2"
+  local timeout_s="${3:-${JLINK_TELNET_TIMEOUT_S}}"
+  local port=4901
+  { sleep 1; echo "${cmd}"; sleep 1; } \
+    | timeout "${timeout_s}" telnet "${host}" "${port}" 2>/dev/null
+}
+
 function launch_reference_client {
   echo "Launching reference client (${REFERENCE_CLIENT})"
 

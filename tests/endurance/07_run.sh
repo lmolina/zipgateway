@@ -8,9 +8,10 @@
 # 2. Detects HomeID once from the ZGW log on [zgw-host]
 # 3. Starts the ET-01 heartbeat probe locally (checks/st01_heartbeat.sh),
 #    sampling ZGW liveness into ${STEP_DIR} while the load runs
-# 4. Runs the endurance burst loop over SSH with a PTY (so CTRL+C reaches
+# 4. Starts device_traffic.sh locally to simulate end-user board interactions
+# 5. Runs the endurance burst loop over SSH with a PTY (so CTRL+C reaches
 #    the worker)
-# 5. Stops the heartbeat, pulls back ${STEP_REMOTE_DIR}/, then runs the
+# 6. Stops background probes, pulls back ${STEP_REMOTE_DIR}/, then runs the
 #    ET-01 analyzer (checks/st01_analyze.sh) which scans ${RUN_DIR} and writes
 #    verdict.txt + summary.json at the run root.
 #
@@ -30,7 +31,8 @@ if [ $# -lt 1 ]; then
   exit 2
 fi
 
-export TEST_DIR="$(cd "$(dirname "$0")" && pwd)"
+TEST_DIR="$(cd "$(dirname "$0")" && pwd)"
+export TEST_DIR
 BENCH_DIR="$(cd "${TEST_DIR}/../../bench" && pwd)"
 
 if [ ! -f "${TEST_DIR}/conf" ]; then
@@ -115,14 +117,27 @@ bash "${TEST_DIR}/checks/st01_heartbeat.sh" \
   --timeout-s "${HEARTBEAT_TIMEOUT_S:-5}" &
 heartbeat_pid=$!
 
-stop_heartbeat() {
+device_traffic_log="${STEP_DIR}/device_traffic.log"
+device_traffic_pid=""
+echo "Starting device traffic -> ${device_traffic_log} ..."
+
+# Give the run_on_host.sh some time before generating traffic from devices
+bash "${TEST_DIR}/device_traffic.sh" 120 >> "${device_traffic_log}" 2>&1 &
+device_traffic_pid=$!
+
+stop_background_workers() {
   if [ -n "${heartbeat_pid}" ] && kill -0 "${heartbeat_pid}" 2>/dev/null; then
     echo "Stopping heartbeat probe (pid ${heartbeat_pid}) ..."
     kill -TERM "${heartbeat_pid}" 2>/dev/null || true
     wait "${heartbeat_pid}" 2>/dev/null || true
   fi
+  if [ -n "${device_traffic_pid}" ] && kill -0 "${device_traffic_pid}" 2>/dev/null; then
+    echo "Stopping device traffic (pid ${device_traffic_pid}) ..."
+    kill -TERM "${device_traffic_pid}" 2>/dev/null || true
+    wait "${device_traffic_pid}" 2>/dev/null || true
+  fi
 }
-trap stop_heartbeat EXIT
+trap stop_background_workers EXIT
 
 echo "Running run_on_host.sh on ${ZGW_HOST} (CTRL+C to stop) ..."
 # -tt forces a PTY so CTRL+C from this terminal reaches the worker.
@@ -130,7 +145,7 @@ echo "Running run_on_host.sh on ${ZGW_HOST} (CTRL+C to stop) ..."
 ssh -tt "${ssh_opts[@]}" "${ssh_target}" \
   "cd '${ZGW_STAGE_DIR}' && sudo RUN_DIR='${RUN_REMOTE_DIR}' bash run_on_host.sh" || true
 
-stop_heartbeat
+stop_background_workers
 trap - EXIT
 
 echo "Pulling logs back to ${STEP_DIR}/ ..."
