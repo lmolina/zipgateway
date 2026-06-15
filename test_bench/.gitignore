@@ -1,0 +1,53 @@
+# SPDX-FileCopyrightText: Silicon Laboratories Inc. <https://www.silabs.com/>
+#
+# SPDX-License-Identifier: LicenseRef-MSLA
+
+
+# General part of the gitignore
+*.launch
+*.orig
+*.bak
+.vscode/
+**/.DS_Store
+**/.idea/
+**/.projectlinkstore
+**/.settings
+**/.makefile
+**/.trash
+**/.uceditor
+**/autogen/*.crc
+**/__pycache__
+**/sonar-bw/
+**/*.zap~
+
+#code convention tool gitignore
+code-convention-tool/
+**/venv/
+**/.venv/
+
+# Per-run output (logs, captures).
+tests/endurance/run_*/
+tests/stress/run_*/
+
+# Per-test input binaries (CI artifacts, ZGW .deb) live under
+# tests/<name>/artifacts/. Ignore their contents; keep the dir via .gitkeep.
+tests/*/artifacts/*
+!tests/*/artifacts/.gitkeep
+
+# Legacy repo-root artifacts/ (pre per-test layout). Tracked: only
+# .gitkeep and README.
+!artifacts/.gitkeep
+!artifacts/README.md
+
+artifacts/*
+
+# Legacy artifact directory (pre-restructure layout).
+endurance_test/
+dist/
+
+# input binaries belong in artifacts/, never elsewhere.
+*.deb
+*.s37
+*.hex
+*.zlf
+*.zip

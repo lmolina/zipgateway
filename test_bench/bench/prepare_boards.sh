@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+# SPDX-FileCopyrightText: Silicon Laboratories Inc. <https://www.silabs.com/>
+#
+# SPDX-License-Identifier: LicenseRef-MSLA
+
+set -e
+set -x
+set -u
+set -o pipefail
+
+script_folder=$(dirname "$0")
+
+function cleanup_boards {
+  local i
+  for ((i = 0; i < BED_N; i++)); do
+    echo
+    echo "=========================================="
+    echo "dut_$i: ${BED_HOST[i]}"
+
+    # Some firmware version may break the radio board, thus the need for a
+    # recover.
+    commander device recover --ip "${BED_HOST[i]}"
+
+    commander device masserase --ip "${BED_HOST[i]}"
+    commander device pageerase --region @userdata --ip "${BED_HOST[i]}"
+
+    # Lockbits is needed in Series 1 only
+    # commander device pageerase --region @lockbits  --ip "${BED_HOST[i]}"
+  done
+}
+
+if [ -z "${TEST_DIR:-}" ]; then
+  echo "Error: TEST_DIR is not set." >&2
+  echo "       call this script from a tests/<name>/ wrapper." >&2
+  exit 1
+fi
+if [ ! -f "${TEST_DIR}/conf" ]; then
+  echo "Error: conf file not found in ${TEST_DIR}" >&2
+  exit 1
+fi
+if [ ! -f "${script_folder}/utils.sh" ]; then
+  echo "Error: utils.sh not found in ${script_folder}" >&2
+  exit 1
+fi
+
+source "${TEST_DIR}/conf"
+source "${script_folder}/utils.sh"
+
+for tool in commander dos2unix; do
+  if ! command -v $tool >/dev/null 2>&1; then
+    echo "Error: $tool is not installed." >&2
+    exit 1
+  fi
+done
+
+vars=(ARTIFACTS_DIR BED_TSV REGION)
+for v in "${vars[@]}"; do
+  if [ -z "${!v}" ]; then
+    echo "Error: Required variable $v is not set in conf." >&2
+    exit 1
+  fi
+done
+
+bed_load "${BED_TSV}"
+
+artifacts_root="${ARTIFACTS_DIR}"
+
+for ((i = 0; i < BED_N; i++)); do
+  artifact_urls=()
+  [ -n "${BED_BOOTLOADER[i]}" ] && artifact_urls+=("${BED_BOOTLOADER[i]}")
+  artifact_urls+=("${BED_FIRMWARE[i]}")
+  for url in "${artifact_urls[@]}"; do
+    local_path=$(bed_artifact_local_path "${artifacts_root}" "${url}")
+    if [ ! -f "${local_path}" ]; then
+      echo "Error: Missing firmware artifact: ${local_path}" >&2
+      echo "Run tests/endurance/01_fetch_artifacts.sh or place the file manually." >&2
+      exit 1
+    fi
+  done
+done
+
+cleanup_boards
+
+mkdir -p "${ARTIFACTS_DIR}"
+echo "dsks=(" > "${ARTIFACTS_DIR}/dsks"
+for ((i = 0; i < BED_N; i++)); do
+  echo
+  echo "=========================================="
+  echo
+  echo "dut_$i: ${BED_HOST[i]}"
+
+  addr="${BED_HOST[i]}"
+  device="${BED_DEVICE[i]}"
+  firmware=$(bed_artifact_local_path "${artifacts_root}" "${BED_FIRMWARE[i]}")
+
+  commander device info --device "${device}" --ip "$addr"
+  sleep 0.5
+  if [ -n "${BED_BOOTLOADER[i]}" ]; then
+    bootloader=$(bed_artifact_local_path "${artifacts_root}" "${BED_BOOTLOADER[i]}")
+    commander flash "${bootloader}" --device "${device}" --ip "$addr"
+    sleep 0.5
+  fi
+  commander flash "${firmware}" --device "${device}" --ip "$addr"
+  sleep 0.5
+  region="${BED_REGION[i]:-${REGION}}"
+  commander flash --tokengroup znet --token MFG_ZWAVE_COUNTRY_FREQ:${region} --device "${device}" --ip "$addr"
+  sleep 1
+
+  dsk=$(commander --apack device zwave-qrcode --timeout 2000 --tif swd --device "${device}" --ip "$addr")
+  dsk=$(echo "$dsk" | grep -o 'INFO: QR code: .*')
+  dsk=$(echo "$dsk" | sed -e 's|.*: ............\(.....\)\(.....\)\(.....\)\(.....\)\(.....\)\(.....\)\(.....\)\(.....\).*]|\1-\2-\3-\4-\5-\6-\7-\8|g')
+  echo "$dsk" >> "${ARTIFACTS_DIR}/dsks"
+  echo
+  power_off_board "$addr"
+  echo "=========================================="
+done
+echo ")" >> "${ARTIFACTS_DIR}/dsks"
+
+dos2unix "${ARTIFACTS_DIR}/dsks"

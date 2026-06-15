@@ -1,0 +1,74 @@
+# SPDX-FileCopyrightText: Silicon Laboratories Inc. <https://www.silabs.com/>
+# SPDX-License-Identifier: LicenseRef-MSLA
+#
+# Bed description for the endurance test. One row per slot.
+# Tab-separated. Lines starting with '#' and blank lines are ignored.
+# Loaded by utils.sh:bed_load and consumed by the 01/02/04/07 step scripts.
+#
+# Columns:
+#   id           zero-based row id (matches dut_$i during flashing)
+#   jlink_host   JLink-IP DNS name (port 4902 control, 5901 SWD)
+#   board        Commander --board family (e.g. brd4205b, brd4401c)
+#   device       Commander --device token (e.g. ZGM230S)
+#   role         zniffer | controller | switch | door_lock | pir
+#   route        PRIORITY_ROUTE_SET hex string; '-' for zniffer/controller
+#   region       MFG_ZWAVE_COUNTRY_FREQ hex (e.g. 0x01=US, 0x00=EU, 0x09=US-LR); '-' for REGION from conf
+#   firmware     full Artifactory URL (wget zip!/member syntax supported)
+#   bootloader   full Artifactory URL; '-' if no separate bootloader
+#
+# Downloaded files mirror the path after /artifactory/ under ${artifacts}/.
+#
+# Endurance testbed distribution from spec page 840538718:
+#   - 1 x zniffer       (BRD4205B, US-LR)
+#   - 1 x controller    (NCP, BRD4205B, US-LR)
+#   - 3 x door_lock     (BRD4205B, US-LR)
+#   - 5 x switch / SOO  (BRD4205B, US-LR)
+#   - 3 x door_lock     (BRD4401C, US)
+#   - 5 x switch / SOO  (BRD4401C, US)
+#   - 2 x pir           (BRD4401C, US)
+#   - 1 x pir           (BRD4401C, US-LR)
+#   - 20 x pir          (TBD hardware, US-LR) -- commented, pending board availability
+#
+id	jlink_host	board	device	role	route	region	firmware	bootloader
+0	jlink-slot-0.example	brd4205b	ZGM230S	zniffer	-	0x09	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_ncp_zniffer-brd4205b.hex	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-uart-xmodem-zwave-otw-brd4205b.s37
+1	jlink-slot-1.example	brd4205b	ZGM230S	controller	-	0x09	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_ncp_serial_api_controller-brd4205b.hex	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-uart-xmodem-zwave-otw-brd4205b.s37
+2	jlink-slot-2.example	brd4205b	ZGM230S	door_lock	-	0x09	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_soc_door_lock_keypad-brd4205b.hex	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-storage-internal-single-zwave-ota-brd4205b.s37
+3	jlink-slot-3.example	brd4205b	ZGM230S	door_lock	-	0x09	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_soc_door_lock_keypad-brd4205b.hex	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-storage-internal-single-zwave-ota-brd4205b.s37
+4	jlink-slot-4.example	brd4205b	ZGM230S	door_lock	-	0x09	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_soc_door_lock_keypad-brd4205b.hex	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-storage-internal-single-zwave-ota-brd4205b.s37
+5	jlink-slot-5.example	brd4205b	ZGM230S	switch	-	0x09	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_soc_switch_on_off-brd4205b.hex	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-storage-internal-single-zwave-ota-brd4205b.s37
+6	jlink-slot-6.example	brd4205b	ZGM230S	switch	-	0x09	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_soc_switch_on_off-brd4205b.hex	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-storage-internal-single-zwave-ota-brd4205b.s37
+7	jlink-slot-7.example	brd4205b	ZGM230S	switch	-	0x09	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_soc_switch_on_off-brd4205b.hex	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-storage-internal-single-zwave-ota-brd4205b.s37
+8	jlink-slot-8.example	brd4205b	ZGM230S	switch	-	0x09	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_soc_switch_on_off-brd4205b.hex	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-storage-internal-single-zwave-ota-brd4205b.s37
+9	jlink-slot-9.example	brd4205b	ZGM230S	switch	-	0x09	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/zwave_soc_switch_on_off-brd4205b.hex	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4205b/bootloader-storage-internal-single-zwave-ota-brd4205b.s37
+10	jlink-slot-10.example	brd4401c	EFR32ZG28	door_lock	-	0x01	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4401c/zwave_soc_door_lock_keypad-brd4401c.hex	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4401c/bootloader-storage-internal-single-zwave-ota-brd4401c.s37
+11	jlink-slot-11.example	brd4401c	EFR32ZG28	door_lock	-	0x01	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4401c/zwave_soc_door_lock_keypad-brd4401c.hex	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4401c/bootloader-storage-internal-single-zwave-ota-brd4401c.s37
+12	jlink-slot-12.example	brd4401c	EFR32ZG28	door_lock	-	0x01	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4401c/zwave_soc_door_lock_keypad-brd4401c.hex	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4401c/bootloader-storage-internal-single-zwave-ota-brd4401c.s37
+13	jlink-slot-13.example	brd4401c	EFR32ZG28	switch	-	0x01	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4401c/zwave_soc_switch_on_off-brd4401c.hex	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4401c/bootloader-storage-internal-single-zwave-ota-brd4401c.s37
+14	jlink-slot-14.example	brd4401c	EFR32ZG28	switch	-	0x01	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4401c/zwave_soc_switch_on_off-brd4401c.hex	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4401c/bootloader-storage-internal-single-zwave-ota-brd4401c.s37
+15	jlink-slot-15.example	brd4401c	EFR32ZG28	switch	-	0x01	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4401c/zwave_soc_switch_on_off-brd4401c.hex	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4401c/bootloader-storage-internal-single-zwave-ota-brd4401c.s37
+16	jlink-slot-16.example	brd4401c	EFR32ZG28	switch	-	0x01	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4401c/zwave_soc_switch_on_off-brd4401c.hex	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4401c/bootloader-storage-internal-single-zwave-ota-brd4401c.s37
+17	jlink-slot-17.example	brd4401c	EFR32ZG28	switch	-	0x01	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4401c/zwave_soc_switch_on_off-brd4401c.hex	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4401c/bootloader-storage-internal-single-zwave-ota-brd4401c.s37
+18	jlink-slot-18.example	brd4401c	EFR32ZG28	pir	-	0x01	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4401c/zwave_soc_sensor_pir-brd4401c.hex	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4401c/bootloader-storage-internal-single-zwave-ota-brd4401c.s37
+19	jlink-slot-19.example	brd4401c	EFR32ZG28	pir	-	0x01	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4401c/zwave_soc_sensor_pir-brd4401c.hex	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4401c/bootloader-storage-internal-single-zwave-ota-brd4401c.s37
+20	jlink-slot-20.example	brd4401c	EFR32ZG28	pir	-	0x09	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4401c/zwave_soc_sensor_pir-brd4401c.hex	https://<HOST>/demo-applications.zip!/zwave_sample_app/brd4401c/bootloader-storage-internal-single-zwave-ota-brd4401c.s37
+# TBD: 20 x PIR US-LR -- pending board/app availability from Apps team
+# 21	<TBD>	<TBD>	<TBD>	pir	-	0x01	<TBD>	<TBD>
+# 22	<TBD>	<TBD>	<TBD>	pir	-	0x01	<TBD>	<TBD>
+# 23	<TBD>	<TBD>	<TBD>	pir	-	0x01	<TBD>	<TBD>
+# 24	<TBD>	<TBD>	<TBD>	pir	-	0x01	<TBD>	<TBD>
+# 25	<TBD>	<TBD>	<TBD>	pir	-	0x01	<TBD>	<TBD>
+# 26	<TBD>	<TBD>	<TBD>	pir	-	0x01	<TBD>	<TBD>
+# 27	<TBD>	<TBD>	<TBD>	pir	-	0x01	<TBD>	<TBD>
+# 28	<TBD>	<TBD>	<TBD>	pir	-	0x01	<TBD>	<TBD>
+# 29	<TBD>	<TBD>	<TBD>	pir	-	0x01	<TBD>	<TBD>
+# 30	<TBD>	<TBD>	<TBD>	pir	-	0x01	<TBD>	<TBD>
+# 31	<TBD>	<TBD>	<TBD>	pir	-	0x09	<TBD>	<TBD>
+# 32	<TBD>	<TBD>	<TBD>	pir	-	0x09	<TBD>	<TBD>
+# 33	<TBD>	<TBD>	<TBD>	pir	-	0x09	<TBD>	<TBD>
+# 34	<TBD>	<TBD>	<TBD>	pir	-	0x09	<TBD>	<TBD>
+# 35	<TBD>	<TBD>	<TBD>	pir	-	0x09	<TBD>	<TBD>
+# 36	<TBD>	<TBD>	<TBD>	pir	-	0x09	<TBD>	<TBD>
+# 37	<TBD>	<TBD>	<TBD>	pir	-	0x09	<TBD>	<TBD>
+# 38	<TBD>	<TBD>	<TBD>	pir	-	0x09	<TBD>	<TBD>
+# 39	<TBD>	<TBD>	<TBD>	pir	-	0x09	<TBD>	<TBD>
+# 40	<TBD>	<TBD>	<TBD>	pir	-	0x09	<TBD>	<TBD>
